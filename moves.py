@@ -7,7 +7,7 @@ def take_move(self, from_sq, to_sq):
         return False
 
     if target != 0:
-        print("Captured:", Piece.get_piece(target))
+        print("Captured:", piece.get_piece(target))
 
     self.squares[to_sq] = piece
     self.squares[from_sq] = 0
@@ -23,17 +23,17 @@ def legal_moves(self, index):
     color = piece & 24
     moves = []
 
-    if piece_type == Piece.PAWN:
+    if piece_type == piece.PAWN:
         moves = self._pawn_moves(index, color)
-    elif piece_type == Piece.KNIGHT:
+    elif piece_type == piece.KNIGHT:
         moves = self._knight_moves(index, color)
-    elif piece_type == Piece.BISHOP:
+    elif piece_type == piece.BISHOP:
         moves = self._sliding_moves(index, color, [9, 7, -9, -7])
-    elif piece_type == Piece.ROOK:
+    elif piece_type == piece.ROOK:
         moves = self._sliding_moves(index, color, [8, -8, 1, -1])
-    elif piece_type == Piece.QUEEN:
+    elif piece_type == piece.QUEEN:
         moves = self._sliding_moves(index, color, [8, -8, 1, -1, 9, 7, -9, -7])
-    elif piece_type == Piece.KING:
+    elif piece_type == piece.KING:
         moves = self._king_moves(index, color)
 
     return moves
