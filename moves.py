@@ -1,5 +1,5 @@
-########## `_get_moves` Function Made By Ahmed Hazem ##########
-###### تنفع لكل القطع ####
+from board import Board
+
 def _get_moves(self, index, offsets, color, max_distance=8):
     moves = []
     rank = index // 8
@@ -30,23 +30,20 @@ def _get_moves(self, index, offsets, color, max_distance=8):
     
     return moves
 
-##############------------------------------------------------------###########
+def take_move(b: Board, from_sq, to_sq):
+    c = b.color_to_move()
+    sq = b.squares[b.get_position(from_sq)]
 
-def take_move(self, from_sq, to_sq):
-    piece = self.squares[from_sq]
-    target = self.squares[to_sq]
-
-    if piece == 0:
+    if sq == 0:
         print("No piece at source square!")
         return False
-
-    if target != 0:
-        print("Captured:", piece.get_piece(target))
-
-    self.squares[to_sq] = piece
-    self.squares[from_sq] = 0
-    return True
-
+    
+    if (sq & c) != c:
+        print("This is the oppenet's square!")
+        return False
+    
+    b.squares[b.get_position(to_sq)] = b.squares[b.get_position(from_sq)]
+    b.squares[b.get_position(from_sq)] = 0
 
 def legal_moves(self, index):
     piece = self.squares[index]
@@ -72,13 +69,10 @@ def legal_moves(self, index):
 
     return moves
 
-########## Moves Section Made By Ahmed Hazem ##########
-
 def _knight_moves(self, index, color):
     """Generate all legal moves for a knight using shared offset handler."""
     knight_offsets = [17, 15, 10, 6, -6, -10, -15, -17]
     return self._get_moves(index, knight_offsets, color, max_distance=2)
-
 
 def _king_moves(self, index, color):
     """Generate all legal moves for a king using shared offset handler."""

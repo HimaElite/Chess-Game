@@ -1,3 +1,6 @@
+from piece import Piece
+
+
 class Board:
     INIT_STATE = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
     FILES = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']
@@ -6,11 +9,11 @@ class Board:
         self.squares = [0] * 64
         self.fen_string = Board.INIT_STATE
         Board.loding_pieces_positions(self)
-        
+
     def loding_pieces_positions(self):
-        pieces_dictionary = {'r':Piece.ROOK, 'p':Piece.PAWN, 'n':Piece.KNIGHT,
-                             'b':Piece.BISHOP, 'q':Piece.QUEEN, 'k':Piece.KING}
-        
+        pieces_dictionary = {'r': Piece.ROOK, 'p': Piece.PAWN, 'n': Piece.KNIGHT,
+                             'b': Piece.BISHOP, 'q': Piece.QUEEN, 'k': Piece.KING}
+
         row = 7
         col = 0
         fen = self.fen_string.split()[0]
@@ -48,8 +51,8 @@ class Board:
                 row += p
         rows.append(row)
 
-        return "/".join(reversed(rows))
-        
+        self.fen_string = "/".join(reversed(rows))
+
     def get_position(self, position):
         position = position.lower()
         file = Board.FILES.index(position[0])
@@ -57,7 +60,15 @@ class Board:
 
         position_index = rank * 8 + file
         piece_type = Piece.get_piece(self.squares[position_index])
-        print("The piece is", piece_type, "in index", position_index)
+        # print("The piece is", piece_type, "in index", position_index) # don't forget to add return
+        return position_index
+
+    def color_to_move(self):
+        fen = self.fen_string.split(' ')[1]
+        if fen == 'w':
+            return Piece.WHITE
+        else:
+            return Piece.BLACK
 
     def present_squares(self):
         for i in range(8):
@@ -78,33 +89,11 @@ class Board:
         print("|")
         print("+---+---+---+---+---+---+---+---+")
 
-class Piece:
-    NONE = 0
-    PAWN = 1
-    KNIGHT = 2
-    BISHOP = 3
-    ROOK = 4
-    QUEEN = 5
-    KING = 6
-
-    WHITE = 8
-    BLACK = 16
-
-    def get_piece(num):
-        pieces = ['0', 'p', 'n', 'b', 'r', 'q', 'k']
-        p = pieces[num & 7]
-        p = str(p)
-        if num & 8:
-            return p.upper()
-        elif num & 16:
-            return p.lower()
-        else:
-            return '0'
 
 def main():
     b = Board()
     b.present_board()
 
+
 if __name__ == "__main__":
     main()
-    
