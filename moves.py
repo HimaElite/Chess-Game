@@ -181,7 +181,21 @@ def _update_castling_rights(b, from_sq, to_sq, moved_piece, captured_piece):
 
 # ------------------- MOVE ACTION ------------------- #
 
+def move_generation_test(b, depth):
+    if depth == 0:
+        return 1
+    
+    num_positions = 0
+    for i in b.active_squares:
+        if (b.squares[i] & 24) == b.side_to_move:
+            for to_sq in legal_moves(b, i):
+                num_positions += move_generation_test(b, depth - 1)
+
+    return num_positions
+
 def take_move(b, from_pos, to_pos, promotion=None):
+    # check the action that player want to do
+
     try:
         from_sq = b.get_index(from_pos)
         to_sq = b.get_index(to_pos)
@@ -339,8 +353,8 @@ def legal_moves(b, index):
 
 def all_legal_moves(b):
     all_moves = []
-    for i, sq in enumerate(b.squares):
-        if sq != 0 and (sq & 24) == b.side_to_move:
+    for i in b.active_squares:
+        if b.squares[i] != 0 and (b.squares[i] & 24) == b.side_to_move:
             for to_sq in legal_moves(b, i):
                 all_moves.append((i, to_sq))
     return all_moves

@@ -5,6 +5,10 @@ class Board:
     FILES = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']
 
     def __init__(self):
+        self.num_pieces = 32
+        self.active_squares = []
+        self.white_king = 4
+        self.black_king = 60
         self.squares = [0] * 64
         self.fen_string = Board.INIT_STATE
         self.side_to_move = Piece.WHITE
@@ -41,6 +45,7 @@ class Board:
                 piece_color = Piece.WHITE if char.isupper() else Piece.BLACK
                 piece_type = pieces_dictionary[char.lower()]
                 self.squares[row * 8 + col] = piece_color | piece_type
+                self.active_squares.append(row * 8 + col)
                 col += 1
 
         self.side_to_move = Piece.WHITE if side == 'w' else Piece.BLACK

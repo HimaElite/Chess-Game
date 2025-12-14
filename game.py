@@ -1,7 +1,7 @@
 from board import Board
 from piece import Piece
 from moves import *
-from terminals_and_evaluations import *
+from terminals_and_evaluations import check_terminals
 import random as rand
 
 ### --------------------------------------------- ###
@@ -128,7 +128,9 @@ def game(option):
 
 
 def main():
-    game()
+    game_board = Board()
+    for d in range(1, 8):
+        print(move_generation_test(game_board, d))
 
 
 if __name__ == "__main__":
