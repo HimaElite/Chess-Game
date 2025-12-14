@@ -134,7 +134,7 @@ def _king_moves(b, index, color):
 
     return moves
 
-def _apply_moves(b, index):
+def apply_moves(b, index):
     sq = b.squares[index]
     if sq == 0:
         return []
@@ -195,7 +195,7 @@ def move_generation_test(b, depth):
         if (sq & 24) != color:
             continue
 
-        for from_sq, to_sq, promo in _apply_moves(b, i):
+        for from_sq, to_sq, promo in apply_moves(b, i):
             undo = make_move(b, from_sq, to_sq, promo, update_fen=False)
             if not is_king_in_check(b, color):
                 if depth == 1:
@@ -393,7 +393,7 @@ def legal_moves(b, index):
         return []
 
     moves = []
-    for from_sq, to_sq, promo in _apply_moves(b, index):
+    for from_sq, to_sq, promo in apply_moves(b, index):
         undo = make_move(b, from_sq, to_sq, promo, update_fen=False)
         illegal = is_king_in_check(b, color)
         undo_move(b, undo, update_fen=False)
@@ -483,21 +483,4 @@ def is_square_attacked(b, index, by_color):
 
     return False
 
-def has_legal_move(b):
-    # this is for checkmate condition in terminal
-    color = b.side_to_move
-    active = list(b.active_squares)
-    for i in active:
-        sq = b.squares[i]
-        if sq == 0:
-            continue
-        if (sq & 24) != color:
-            continue
-        for from_sq, to_sq, promo in _apply_moves(b, i):
-            undo = make_move(b, from_sq, to_sq, promo, update_fen=False)
-            illegal = is_king_in_check(b, color)
-            undo_move(b, undo, update_fen=False)
-            if not illegal:
-                return True
-    return False
 # ====================================================== #

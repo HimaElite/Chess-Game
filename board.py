@@ -45,7 +45,7 @@ class Board:
                 piece_color = Piece.WHITE if char.isupper() else Piece.BLACK
                 piece_type = pieces_dictionary[char.lower()]
                 self.squares[row * 8 + col] = piece_color | piece_type
-                self.active_squares.append(row * 8 + col)
+                self.active_squares.add(row * 8 + col)
                 col += 1
 
         self.side_to_move = Piece.WHITE if side == 'w' else Piece.BLACK
