@@ -115,21 +115,21 @@ def _king_moves(b, index, color):
     if color == Piece.WHITE and index == 4:
         if 'K' in b.castling:
             if b.squares[5] == 0 and b.squares[6] == 0 and b.squares[7] == (Piece.WHITE | Piece.ROOK):
-                if not is_in_check(b, Piece.WHITE) and not is_square_attacked(b, 5, Piece.BLACK) and not is_square_attacked(b, 6, Piece.BLACK):
+                if not is_king_in_check(b, Piece.WHITE) and not is_square_attacked(b, 5, Piece.BLACK) and not is_square_attacked(b, 6, Piece.BLACK):
                     moves.append((4, 6, None))
         if 'Q' in b.castling:
             if b.squares[1] == 0 and b.squares[2] == 0 and b.squares[3] == 0 and b.squares[0] == (Piece.WHITE | Piece.ROOK):
-                if not is_in_check(b, Piece.WHITE) and not is_square_attacked(b, 3, Piece.BLACK) and not is_square_attacked(b, 2, Piece.BLACK):
+                if not is_king_in_check(b, Piece.WHITE) and not is_square_attacked(b, 3, Piece.BLACK) and not is_square_attacked(b, 2, Piece.BLACK):
                     moves.append((4, 2, None))
 
     if color == Piece.BLACK and index == 60:
         if 'k' in b.castling:
             if b.squares[61] == 0 and b.squares[62] == 0 and b.squares[63] == (Piece.BLACK | Piece.ROOK):
-                if not is_in_check(b, Piece.BLACK) and not is_square_attacked(b, 61, Piece.WHITE) and not is_square_attacked(b, 62, Piece.WHITE):
+                if not is_king_in_check(b, Piece.BLACK) and not is_square_attacked(b, 61, Piece.WHITE) and not is_square_attacked(b, 62, Piece.WHITE):
                     moves.append((60, 62, None))
         if 'q' in b.castling:
             if b.squares[57] == 0 and b.squares[58] == 0 and b.squares[59] == 0 and b.squares[56] == (Piece.BLACK | Piece.ROOK):
-                if not is_in_check(b, Piece.BLACK) and not is_square_attacked(b, 59, Piece.WHITE) and not is_square_attacked(b, 58, Piece.WHITE):
+                if not is_king_in_check(b, Piece.BLACK) and not is_square_attacked(b, 59, Piece.WHITE) and not is_square_attacked(b, 58, Piece.WHITE):
                     moves.append((60, 58, None))
 
     return moves
@@ -182,14 +182,27 @@ def _update_castling_rights(b, from_sq, to_sq, moved_piece, captured_piece):
 # ------------------- MOVE ACTION ------------------- #
 
 def move_generation_test(b, depth):
-    if depth == 0:
+    if depth <= 0:
         return 1
     
+    color = b.side_to_move
     num_positions = 0
-    for i in b.active_squares:
-        if (b.squares[i] & 24) == b.side_to_move:
-            for to_sq in legal_moves(b, i):
-                num_positions += move_generation_test(b, depth - 1)
+    active = list(b.active_squares)
+    for i in active:
+        sq = b.squares[i]
+        if sq == 0:
+            continue
+        if (sq & 24) != color:
+            continue
+
+        for from_sq, to_sq, promo in _apply_moves(b, i):
+            undo = make_move(b, from_sq, to_sq, promo, update_fen=False)
+            if not is_king_in_check(b, color):
+                if depth == 1:
+                    num_positions += 1
+                else:
+                    num_positions += move_generation_test(b, depth - 1)
+            undo_move(b, undo, update_fen=False)
 
     return num_positions
 
@@ -232,7 +245,7 @@ def take_move(b, from_pos, to_pos, promotion=None):
     undo = make_move(b, from_sq, to_sq, promo_piece)
     return undo
 
-def make_move(b, from_sq, to_sq, promotion=None):
+def make_move(b, from_sq, to_sq, promotion=None, update_fen=True):
     moved_piece = b.squares[from_sq]
     captured_piece = b.squares[to_sq]
 
@@ -246,6 +259,9 @@ def make_move(b, from_sq, to_sq, promotion=None):
         'prev_ep': b.en_passant,
         'prev_halfmove': b.halfmove_clock,
         'prev_fullmove': b.fullmove_number,
+        'prev_num_pieces': b.num_pieces,
+        'prev_white_king': b.white_king,
+        'prev_black_king': b.black_king,
         'ep_capture_sq': None,
         'castle_rook_from': None,
         'castle_rook_to': None,
@@ -266,6 +282,14 @@ def make_move(b, from_sq, to_sq, promotion=None):
         undo['ep_capture_sq'] = cap_sq
         undo['captured'] = b.squares[cap_sq]
         b.squares[cap_sq] = 0
+        if undo['captured'] != 0:
+            b.num_pieces -= 1
+            b.active_squares.discard(cap_sq)
+
+    b.active_squares.discard(from_sq)
+    if captured_piece != 0:
+        b.num_pieces -= 1
+        b.active_squares.discard(to_sq)
 
     b.squares[from_sq] = 0
     if pt == Piece.PAWN:
@@ -280,6 +304,14 @@ def make_move(b, from_sq, to_sq, promotion=None):
     if pt == Piece.PAWN:
         if abs(to_sq - from_sq) == 16:
             b.en_passant = (from_sq + to_sq) // 2
+
+    b.active_squares.add(to_sq)
+
+    if pt == Piece.KING:
+        if color == Piece.WHITE:
+            b.white_king = to_sq
+        else:
+            b.black_king = to_sq
 
     if pt == Piece.KING:
         if from_sq == 4 and to_sq == 6:
@@ -301,38 +333,56 @@ def make_move(b, from_sq, to_sq, promotion=None):
             undo['castle_rook_piece'] = b.squares[rf]
             b.squares[rf] = 0
             b.squares[rt] = undo['castle_rook_piece']
+            b.active_squares.discard(rf)
+            b.active_squares.add(rt)
 
     _update_castling_rights(b, from_sq, to_sq, moved_piece, undo['captured'])
     
     b.switch_turn()
-    b.generate_fen_string()
+    if update_fen:
+        b.generate_fen_string()
     return undo
 
-def undo_move(b, undo):
+def undo_move(b, undo, update_fen=True):
+    from_sq = undo['from']
+    to_sq = undo['to']
     b.side_to_move = undo['prev_side']
     b.castling = undo['prev_castling']
     b.en_passant = undo['prev_ep']
     b.halfmove_clock = undo['prev_halfmove']
     b.fullmove_number = undo['prev_fullmove']
-
-    from_sq = undo['from']
-    to_sq = undo['to']
+    b.num_pieces = undo.get('prev_num_pieces', b.num_pieces)
+    b.white_king = undo.get('prev_white_king', b.white_king)
+    b.black_king = undo.get('prev_black_king', b.black_king)
 
     b.squares[from_sq] = undo['moved']
     b.squares[to_sq] = undo['captured']
+
+    b.active_squares.discard(to_sq)
+    b.active_squares.add(from_sq)
+
+    if undo['captured'] != 0:
+        b.active_squares.add(to_sq)
+    else:
+        b.active_squares.discard(to_sq)
 
     if undo['ep_capture_sq'] is not None:
         cap_sq = undo['ep_capture_sq']
         b.squares[to_sq] = 0
         b.squares[cap_sq] = undo['captured']
+        b.active_squares.discard(to_sq)
+        b.active_squares.add(cap_sq)
 
     if undo['castle_rook_from'] is not None:
         rf = undo['castle_rook_from']
         rt = undo['castle_rook_to']
         b.squares[rf] = undo['castle_rook_piece']
         b.squares[rt] = 0
+        b.active_squares.discard(rt)
+        b.active_squares.add(rf)
 
-    b.generate_fen_string()
+    if update_fen:
+        b.generate_fen_string()
 
 def legal_moves(b, index):
     sq = b.squares[index]
@@ -344,16 +394,17 @@ def legal_moves(b, index):
 
     moves = []
     for from_sq, to_sq, promo in _apply_moves(b, index):
-        undo = make_move(b, from_sq, to_sq, promo)
-        illegal = is_in_check(b, color)
-        undo_move(b, undo)
+        undo = make_move(b, from_sq, to_sq, promo, update_fen=False)
+        illegal = is_king_in_check(b, color)
+        undo_move(b, undo, update_fen=False)
         if not illegal:
             moves.append(to_sq)
     return moves
 
 def all_legal_moves(b):
     all_moves = []
-    for i in b.active_squares:
+    active = list(b.active_squares)
+    for i in active:
         if b.squares[i] != 0 and (b.squares[i] & 24) == b.side_to_move:
             for to_sq in legal_moves(b, i):
                 all_moves.append((i, to_sq))
@@ -365,11 +416,9 @@ def all_legal_moves(b):
 
 # ----------------- CHECKS & CASTLING ----------------- #
 
-def _find_king(b, color):
-    for i, sq in enumerate(b.squares):
-        if sq != 0 and (sq & 24) == color and (sq & 7) == Piece.KING:
-            return i
-    return None
+def is_king_in_check(b, color):
+    king_sq = b.white_king if color == Piece.WHITE else b.black_king
+    return is_square_attacked(b, king_sq, _opponent(color))
 
 def is_square_attacked(b, index, by_color):
     if by_color == Piece.WHITE:
@@ -434,10 +483,21 @@ def is_square_attacked(b, index, by_color):
 
     return False
 
-def is_in_check(b, color):
-    king_sq = _find_king(b, color)
-    if king_sq is None:
-        return False
-    return is_square_attacked(b, king_sq, _opponent(color))
-
+def has_legal_move(b):
+    # this is for checkmate condition in terminal
+    color = b.side_to_move
+    active = list(b.active_squares)
+    for i in active:
+        sq = b.squares[i]
+        if sq == 0:
+            continue
+        if (sq & 24) != color:
+            continue
+        for from_sq, to_sq, promo in _apply_moves(b, i):
+            undo = make_move(b, from_sq, to_sq, promo, update_fen=False)
+            illegal = is_king_in_check(b, color)
+            undo_move(b, undo, update_fen=False)
+            if not illegal:
+                return True
+    return False
 # ====================================================== #

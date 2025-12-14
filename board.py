@@ -5,8 +5,8 @@ class Board:
     FILES = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']
 
     def __init__(self):
-        self.num_pieces = 32
-        self.active_squares = []
+        self.num_pieces = 0
+        self.active_squares = set()
         self.white_king = 4
         self.black_king = 60
         self.squares = [0] * 64
