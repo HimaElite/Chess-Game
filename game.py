@@ -1,7 +1,10 @@
 from board import Board
 from piece import Piece
 from moves import *
+from terminals_and_evaluations import *
 import random as rand
+
+from terminals_and_evaluations import check_terminals
 
 ### --------------------------------------------- ###
 #   ALL AVALABLE COMMANDS:
@@ -91,17 +94,24 @@ def human_move(game_board, undo_stack, q):
 def game(option):
     undo_stack = []
     game_board = Board()
-    last_side = None
+    final_result = None
     q = False
 
-    turns = 0
-    while all_legal_moves(game_board) and not q:
+    while not q:
         game_board.present_board()
+        color = Piece.BLACK if game_board.side_to_move == Piece.WHITE else Piece.WHITE
+        t, r = check_terminals(game_board, color)
+        if t != False:
+            if t == 0:
+                final_result = f"This is draw because {r}"
+                q = True
+                continue
+            else:
+                final_result = r
+                break
+
         side = 'WHITE' if game_board.side_to_move == Piece.WHITE else 'BLACK'
         print("Turn:", side)
-        last_side = side
-        turns += 1
-        print(turns)
 
         if option == 1:
             undo_stack, q = human_move(game_board, undo_stack, q)
@@ -118,8 +128,7 @@ def game(option):
             print(the_move)
             continue
 
-    game_board.present_board()
-    print(f"The {last_side} is the winner!")
+    print(final_result)
 
 
 def main():
