@@ -3,13 +3,14 @@ from piece import Piece
 from game import *
 from moves import *
 
-def check_terminals(b: Board, color):
+def check_terminals(b, color):
     # there are two end of chess games: (Draw or Win)
     # - win only if there checkmate, if white wins
     #   the terminal = +1, else the terminal = -1
     #
     # - draw happend when the same move played 3 times,
     #   50-move rule, stalemate, or no enough materials
+    
     result = None
     Draw = 0
     num_pieces = 0
@@ -21,7 +22,7 @@ def check_terminals(b: Board, color):
         result = "No enough materials!"
         return Draw, result
     
-    if b.halfmove_clock == 50:
+    if b.halfmove_clock >= 50:
         result = "50-move rule!"
         return Draw, result
     
@@ -37,7 +38,7 @@ def check_terminals(b: Board, color):
             result = "This is Stalemate!"
             return Draw, result
         
-    return False, result
+    return None, result
 
 def get_evaluation(b: Board):
     pass

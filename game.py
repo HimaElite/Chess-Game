@@ -4,8 +4,6 @@ from moves import *
 from terminals_and_evaluations import *
 import random as rand
 
-from terminals_and_evaluations import check_terminals
-
 ### --------------------------------------------- ###
 #   ALL AVALABLE COMMANDS:
 #
@@ -101,14 +99,12 @@ def game(option):
         game_board.present_board()
         color = Piece.BLACK if game_board.side_to_move == Piece.WHITE else Piece.WHITE
         t, r = check_terminals(game_board, color)
-        if t != False:
+        if t != None:
             if t == 0:
                 final_result = f"This is draw because {r}"
-                q = True
-                continue
             else:
                 final_result = r
-                break
+            break
 
         side = 'WHITE' if game_board.side_to_move == Piece.WHITE else 'BLACK'
         print("Turn:", side)
