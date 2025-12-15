@@ -1,6 +1,7 @@
 from piece import Piece
 from board import *
 
+
 # ------------------- HELPERS ------------------- #
 
 def _rank(index):

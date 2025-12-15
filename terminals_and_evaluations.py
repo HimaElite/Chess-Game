@@ -8,8 +8,6 @@ def has_legal_move(b):
     active = list(b.active_squares)
     for i in active:
         sq = b.squares[i]
-        if sq == 0:
-            continue
         if (sq & 24) != color:
             continue
         for from_sq, to_sq, promo in apply_moves(b, i):
@@ -64,4 +62,35 @@ def check_terminals(b: Board, color):
     return None, result
 
 def get_evaluation(b: Board):
-    pass
+    def _mirror(sq):
+        return (7 - (sq // 8)) * 8 + (sq % 8)
+
+    endgame = (b.num_pieces <= 10)
+    score = 0
+    for sq in b.active_squares:
+        p = b.squares[sq]
+        if p == 0:
+            continue
+
+        color = p & 24
+        pt = p & 7
+        base = Piece.get_value(pt)
+
+        if pt == Piece.KING:
+            p_heatmap = Piece.get_heatmap(pt, True) if endgame else Piece.get_heatmap(pt)
+            bonus = p_heatmap[sq] if color == Piece.WHITE else p_heatmap[_mirror(sq)]
+        else:
+            p_heatmap = Piece.get_heatmap(pt)
+            bonus = p_heatmap[sq] if (p_heatmap is not None and color == Piece.WHITE) else 0
+            if p_heatmap is not None and color == Piece.BLACK:
+                bonus = p_heatmap[_mirror(sq)]
+
+        if color == Piece.WHITE:
+            score += base + bonus
+        else:
+            score -= base + bonus
+
+    if b.side_to_move == Piece.BLACK:
+        score = -score
+
+    return score

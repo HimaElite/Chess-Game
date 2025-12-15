@@ -1,7 +1,7 @@
 from board import Board
 from piece import Piece
 from moves import *
-from terminals_and_evaluations import check_terminals
+from terminals_and_evaluations import *
 import random as rand
 
 ### --------------------------------------------- ###
@@ -98,6 +98,7 @@ def game(option):
     while not q:
         game_board.present_board()
         color = Piece.BLACK if game_board.side_to_move == Piece.WHITE else Piece.WHITE
+        print(get_evaluation(game_board))
         t, r = check_terminals(game_board, color)
         if t != None:
             if t == 0:
