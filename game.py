@@ -28,7 +28,7 @@ def ai_move(game_board, undo_stack):
     return undo_stack, the_move
 
 
-def human_move(game_board, undo_stack, q):
+def human_move(game_board, undo_stack, q, option):
     while True:
         cmd = input("Enter the move or command: ").strip()
         if not cmd:
@@ -48,6 +48,9 @@ def human_move(game_board, undo_stack, q):
             if undo_stack:
                 last = undo_stack.pop()
                 undo_move(game_board, last)
+                if option == 2:
+                    last = undo_stack.pop()
+                    undo_move(game_board, last)
             else:
                 print("Nothing to undo")
             continue
