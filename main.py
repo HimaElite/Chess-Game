@@ -1,7 +1,7 @@
-from board import Board
-from piece import Piece
-from game import *
-from moves import *
+from Utilies.board import Board
+from Utilies.piece import Piece
+from Utilies.game import *
+from Utilies.moves import *
 
 ######################
 ## El Clásico Chess ##
