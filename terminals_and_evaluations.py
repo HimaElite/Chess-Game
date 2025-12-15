@@ -2,22 +2,6 @@ from board import Board
 from piece import Piece
 from moves import *
 
-def has_legal_move(b):
-    # this is for checkmate condition
-    color = b.side_to_move
-    active = list(b.active_squares)
-    for i in active:
-        sq = b.squares[i]
-        if (sq & 24) != color:
-            continue
-        for from_sq, to_sq, promo in apply_moves(b, i):
-            undo = make_move(b, from_sq, to_sq, promo, update_fen=False)
-            illegal = is_king_in_check(b, color)
-            undo_move(b, undo, update_fen=False)
-            if not illegal:
-                return True
-    return False
-
 def check_terminals(b: Board, color):
     # there are two end of chess games: (Draw or Win)
     # - win only if there checkmate, if white wins
@@ -46,7 +30,7 @@ def check_terminals(b: Board, color):
         result = "50-move rule!"
         return 0, result
     
-    if not has_legal_move(b):
+    if not all_legal_moves(b):
         if is_king_in_check(b, b.side_to_move):
             if color == Piece.WHITE:
                 result = "White wins!"
