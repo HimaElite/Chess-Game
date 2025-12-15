@@ -1,0 +1,1236 @@
+/* ===================================
+   EL CLÁSICO CHESS - GUI STYLES
+   Real Madrid (White) vs Barcelona (Black)
+   =================================== */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    /* Real Madrid Colors */
+    --madrid-white: #f5f5f5;
+    --madrid-gold: #ffc107;
+    --madrid-primary: #ffffff;
+    
+    /* Barcelona Colors */
+    --barcelona-blue: #004d98;
+    --barcelona-red: #c60c30;
+    --barcelona-primary: #004d98;
+    
+    /* General */
+    --light-square: #e8d5c4;
+    --dark-square: #8b7355;
+    --accent: #ffc107;
+}
+
+/* ===== GENERAL BODY STYLES ===== */
+html {
+    font-size: 12px;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    overflow-x: hidden;
+}
+
+/* ===== MODE SELECTOR PAGE ===== */
+.mode-selector-body {
+    position: relative;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 10px;
+    background: url('/static/images/start_page_bg.png') center/cover no-repeat fixed;
+    background-color: #1a1a1a;
+    overflow: hidden;
+}
+
+/* Video Background */
+.video-background {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: -1;
+    opacity: 0.7;
+}
+
+/* Hide video on error to show background image */
+.video-background.hidden {
+    display: none;
+}
+
+@keyframes gradientShift {
+    0%, 100% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+}
+
+.container {
+    width: 100%;
+    max-width: 600px;
+}
+
+.mode-selector-card {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 30px;
+    padding: 30px 25px;
+    /* height: 1vh; */
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+    animation: slideInDown 0.8s ease;
+}
+
+@keyframes slideInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.logo-section {
+    text-align: center;
+    margin-bottom: 50px;
+}
+
+.title {
+    font-size: 3em;
+    font-weight: bold;
+    background: linear-gradient(135deg, var(--madrid-white) 0%, var(--madrid-gold) 50%, var(--barcelona-red) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 10px;
+    animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
+}
+
+.subtitle {
+    font-size: 1.5em;
+    color: rgba(0, 0, 0, 0.7);
+}
+
+.mode-selection h2 {
+    text-align: center;
+    margin-bottom: 30px;
+    color: rgba(0, 0, 0, 0.8);
+    font-size: 1.8em;
+}
+
+.mode-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    margin-bottom: 40px;
+}
+
+.mode-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 30px;
+    background: rgba(255, 255, 255, 0.25);
+    backdrop-filter: blur(15px);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 20px;
+    color: black;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    gap: 10px;
+}
+
+.mode-btn:hover {
+    background: rgba(255, 255, 255, 0.4);
+    border-color: rgba(255, 255, 255, 0.6);
+    transform: translateY(-5px);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+}
+
+.mode-btn:active {
+    transform: translateY(-2px);
+}
+
+.mode-btn.active {
+    background: rgba(255, 255, 255, 0.5);
+    border-color: var(--accent);
+    border-width: 3px;
+    box-shadow: 0 10px 30px rgba(255, 193, 7, 0.4);
+}
+
+.team-selection-title {
+    text-align: center;
+    margin: 40px 0 30px;
+    color: rgba(0, 0, 0, 0.8);
+    font-size: 1.8em;
+    display: none;
+}
+
+.teams-selection {
+    display: none;
+    gap: 20px;
+    justify-content: center;
+    margin-bottom: 30px;
+}
+
+.team-select-card {
+    flex: 1;
+    max-width: 250px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 30px 20px;
+    background: rgba(255, 255, 255, 0.3);
+    backdrop-filter: blur(15px);
+    border: 3px solid rgba(255, 255, 255, 0.4);
+    border-radius: 20px;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.team-select-card:hover {
+    transform: translateY(-8px) scale(1.05);
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+}
+
+.team-select-card.madrid-card {
+    border-color: var(--madrid-gold);
+}
+
+.team-select-card.madrid-card:hover {
+    background: rgba(255, 255, 255, 0.5);
+    box-shadow: 0 15px 40px rgba(255, 193, 7, 0.4);
+}
+
+.team-select-card.barcelona-card {
+    border-color: var(--barcelona-blue);
+}
+
+.team-select-card.barcelona-card:hover {
+    background: rgba(0, 77, 152, 0.25);
+    box-shadow: 0 15px 40px rgba(0, 77, 152, 0.4);
+}
+
+.team-card-logo {
+    width: 80px;
+    height: 80px;
+    object-fit: contain;
+    margin-bottom: 15px;
+}
+
+.team-card-info h3 {
+    font-size: 1.5em;
+    margin-bottom: 8px;
+    color: rgba(0, 0, 0, 0.9);
+}
+
+.team-card-info p {
+    font-size: 1.1em;
+    color: rgba(0, 0, 0, 0.7);
+}
+
+.mode-icon {
+    font-size: 2.5em;
+    animation: bounce 0.6s ease infinite;
+}
+
+.mode-btn:nth-child(1) .mode-icon {
+    animation-delay: 0s;
+}
+
+.mode-btn:nth-child(2) .mode-icon {
+    animation-delay: 0.1s;
+}
+
+.mode-btn:nth-child(3) .mode-icon {
+    animation-delay: 0.2s;
+}
+
+@keyframes bounce {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+.mode-text {
+    font-size: 1.3em;
+    font-weight: bold;
+}
+
+.mode-desc {
+    font-size: 0.9em;
+    color: rgba(0, 0, 0, 0.6);
+}
+
+.teams-info {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    transition: all 0.3s ease;
+    opacity: 0.6;
+}
+
+.teams-info.active {
+    opacity: 1;
+    animation: pulse 1s ease-in-out;
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+.team {
+    flex: 1;
+    padding: 20px;
+    border-radius: 15px;
+    text-align: center;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.team.madrid {
+    background: rgba(255, 255, 255, 0.3);
+    color: #333;
+}
+
+.team.madrid:hover {
+    background: rgba(255, 255, 255, 0.5);
+    border-color: var(--madrid-gold);
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(255, 193, 7, 0.4);
+}
+
+.team.barcelona {
+    background: rgba(0, 77, 152, 0.3);
+    color: #004d98;
+}
+
+.team.barcelona:hover {
+    background: rgba(0, 77, 152, 0.5);
+    border-color: var(--barcelona-blue);
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(0, 77, 152, 0.4);
+}
+
+.team h3 {
+    font-size: 1.3em;
+    margin-bottom: 5px;
+}
+
+.team p {
+    font-size: 0.9em;
+    opacity: 0.8;
+}
+
+/* ===== GAME PAGE STYLES ===== */
+.game-body {
+    background: url('/static/images/start_page_bg.png') center/cover no-repeat fixed;
+    min-height: 100vh;
+    padding: 10px;
+    background-color: #1a1a1a;
+}
+
+.game-container {
+    max-width: 900px;
+    margin: 0 auto;
+    animation: fadeIn 0.8s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+.game-header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.header-content {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 20px;
+    padding: 20px;
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+}
+
+.game-header h1 {
+    font-size: 2.5em;
+    background: linear-gradient(135deg, var(--madrid-gold) 0%, var(--barcelona-red) 50%, var(--madrid-white) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 15px;
+}
+
+.teams-display {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 30px;
+}
+
+.team-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 20px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+}
+
+.team-info.madrid {
+    color: #333;
+    border: 1px solid var(--madrid-gold);
+}
+
+.team-info.barcelona {
+    color: var(--barcelona-blue);
+    border: 1px solid var(--barcelona-blue);
+}
+
+.team-icon {
+    font-size: 1.5em;
+}
+
+.team-logo {
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
+}
+
+.team-name {
+    font-weight: bold;
+    font-size: 1.1em;
+}
+
+.vs {
+    font-weight: bold;
+    font-size: 1.3em;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.game-main {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.board-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.chessboard {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 0;
+    background: rgba(30, 30, 30, 0.5);
+    padding: 15px;
+    border-radius: 15px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(10px);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    aspect-ratio: 1;
+    animation: slideInUp 0.8s ease;
+}
+
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.square {
+    aspect-ratio: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 2.5em;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.2s ease;
+    border: 2px solid transparent;
+}
+
+.square.light {
+    background: linear-gradient(135deg, rgba(232, 213, 196, 0.8), rgba(232, 213, 196, 0.6));
+}
+
+.square.dark {
+    background: linear-gradient(135deg, rgba(139, 115, 85, 0.8), rgba(139, 115, 85, 0.6));
+}
+
+.square:hover {
+    transform: scale(0.95);
+    box-shadow: inset 0 0 15px rgba(255, 193, 7, 0.3);
+}
+
+.square.selected {
+    border: 2px solid var(--madrid-gold);
+    box-shadow: inset 0 0 15px rgba(255, 193, 7, 0.5), 0 0 20px rgba(255, 193, 7, 0.4);
+    animation: glow 0.5s ease infinite;
+}
+
+.square.legal-move {
+    border: 2px solid rgba(76, 175, 80, 0.7);
+    box-shadow: inset 0 0 10px rgba(76, 175, 80, 0.4), 0 0 15px rgba(76, 175, 80, 0.3);
+    animation: legalMoveGlow 0.7s ease infinite;
+}
+
+@keyframes glow {
+    0%, 100% {
+        box-shadow: inset 0 0 15px rgba(255, 193, 7, 0.5), 0 0 20px rgba(255, 193, 7, 0.4);
+    }
+    50% {
+        box-shadow: inset 0 0 20px rgba(255, 193, 7, 0.7), 0 0 30px rgba(255, 193, 7, 0.6);
+    }
+}
+
+@keyframes legalMoveGlow {
+    0%, 100% {
+        box-shadow: inset 0 0 10px rgba(76, 175, 80, 0.4), 0 0 15px rgba(76, 175, 80, 0.3);
+    }
+    50% {
+        box-shadow: inset 0 0 15px rgba(76, 175, 80, 0.6), 0 0 25px rgba(76, 175, 80, 0.5);
+    }
+}
+
+.piece {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 90%;
+    height: 90%;
+    border-radius: 50%;
+    font-weight: bold;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    cursor: grab;
+    transition: all 0.3s ease;
+    animation: pieceEntry 0.3s ease;
+    position: relative;
+    overflow: visible;
+}
+
+@keyframes pieceEntry {
+    from {
+        transform: scale(0.8);
+        opacity: 0.8;
+    }
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.piece:active {
+    cursor: grabbing;
+}
+
+/* Real Madrid Style - Clean white with thin golden accent lines */
+.piece.madrid {
+    background: linear-gradient(135deg, #ffffff, #f8f8f8);
+    color: #333;
+    border: 2px solid var(--madrid-gold);
+}
+
+/* Real Madrid Accent Lines (3 thin golden stripes) */
+.piece.madrid::before {
+    content: '';
+    position: absolute;
+    top: 10%;
+    bottom: 10%;
+    left: 25%;
+    width: 2px;
+    background: var(--madrid-gold);
+    border-radius: 1px;
+    opacity: 0.8;
+}
+
+.piece.madrid::after {
+    content: '';
+    position: absolute;
+    top: 10%;
+    bottom: 10%;
+    right: 25%;
+    width: 2px;
+    background: var(--madrid-gold);
+    border-radius: 1px;
+    opacity: 0.8;
+}
+
+/* Barcelona Style - Bold blue and red vertical stripes */
+.piece.barcelona {
+    background: repeating-linear-gradient(
+        90deg,
+        var(--barcelona-blue) 0px,
+        var(--barcelona-blue) 10px,
+        var(--barcelona-red) 10px,
+        var(--barcelona-red) 20px
+    );
+    color: #fff;
+    border: 2px solid var(--barcelona-red);
+}
+
+/* Piece Type Specific Styles */
+
+/* PAWN - Simple short accent lines / narrow stripes */
+.piece.madrid[data-piece-type="pawn"]::before,
+.piece.madrid[data-piece-type="pawn"]::after {
+    top: 30%;
+    bottom: 40%;
+}
+
+/* KNIGHT - Accent lines with yellow collar effect */
+.piece.madrid[data-piece-type="knight"] {
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3),
+                inset 0 -8px 0 -5px rgba(255, 193, 7, 0.3);
+}
+
+.piece.barcelona[data-piece-type="knight"] {
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3),
+                inset 0 -8px 0 -5px rgba(255, 193, 7, 0.5);
+}
+
+/* ROOK - Vertical lines from top to bottom */
+.piece.madrid[data-piece-type="rook"]::before,
+.piece.madrid[data-piece-type="rook"]::after {
+    top: 5%;
+    bottom: 5%;
+}
+
+/* BISHOP - Curved lines (simulated with gradient) */
+.piece.madrid[data-piece-type="bishop"]::before {
+    background: linear-gradient(to bottom, 
+        transparent 0%, 
+        var(--madrid-gold) 20%, 
+        var(--madrid-gold) 80%, 
+        transparent 100%);
+    width: 2px;
+    left: 30%;
+}
+
+.piece.madrid[data-piece-type="bishop"]::after {
+    background: linear-gradient(to bottom, 
+        transparent 0%, 
+        var(--madrid-gold) 20%, 
+        var(--madrid-gold) 80%, 
+        transparent 100%);
+    width: 2px;
+    right: 30%;
+}
+
+/* QUEEN & KING - Long elegant lines on shoulders */
+.piece.madrid[data-piece-type="queen"]::before,
+.piece.madrid[data-piece-type="queen"]::after,
+.piece.madrid[data-piece-type="king"]::before,
+.piece.madrid[data-piece-type="king"]::after {
+    top: 5%;
+    bottom: 5%;
+    width: 2.5px;
+}
+
+/* Add center line for King */
+.piece.madrid[data-piece-type="king"] {
+    background: linear-gradient(135deg, #ffffff, #f8f8f8),
+                linear-gradient(to bottom, 
+                    transparent 10%, 
+                    var(--madrid-gold) 10%, 
+                    var(--madrid-gold) 12%, 
+                    transparent 12%,
+                    transparent 88%,
+                    var(--madrid-gold) 88%,
+                    var(--madrid-gold) 90%,
+                    transparent 90%);
+    background-blend-mode: normal;
+}
+
+/* Barcelona specific piece adjustments */
+.piece.barcelona[data-piece-type="pawn"] {
+    background: repeating-linear-gradient(
+        90deg,
+        var(--barcelona-blue) 0px,
+        var(--barcelona-blue) 8px,
+        var(--barcelona-red) 8px,
+        var(--barcelona-red) 16px
+    );
+}
+
+.piece.barcelona[data-piece-type="bishop"] {
+    background: repeating-linear-gradient(
+        90deg,
+        var(--barcelona-blue) 0px,
+        var(--barcelona-blue) 12px,
+        var(--barcelona-red) 12px,
+        var(--barcelona-red) 24px
+    );
+}
+
+.piece.barcelona[data-piece-type="queen"],
+.piece.barcelona[data-piece-type="king"] {
+    background: repeating-linear-gradient(
+        90deg,
+        var(--barcelona-blue) 0px,
+        var(--barcelona-blue) 15px,
+        var(--barcelona-red) 15px,
+        var(--barcelona-red) 30px
+    );
+}
+
+.square:hover .piece {
+    transform: scale(1.1);
+}
+
+.board-info {
+    text-align: center;
+    padding: 15px;
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 10px;
+    color: white;
+    font-size: 1.1em;
+    font-weight: bold;
+}
+
+.turn-indicator {
+    animation: pulse 1s ease-in-out infinite;
+}
+
+/* ===== SIDEBAR STYLES ===== */
+.game-sidebar {
+    flex: 0 0 280px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.sidebar-card {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 15px;
+    padding: 20px;
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+    color: white;
+    animation: slideInRight 0.8s ease;
+}
+
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.sidebar-card h3 {
+    margin-bottom: 15px;
+    font-size: 1.2em;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.3);
+    padding-bottom: 10px;
+}
+
+.game-status {
+    font-size: 1em;
+    line-height: 1.5;
+}
+
+.status-text {
+    color: #4CAF50;
+    font-weight: bold;
+}
+
+.winner-text {
+    color: #FFD700;
+    font-size: 1.3em;
+    animation: winnerPulse 0.8s ease infinite;
+}
+
+@keyframes winnerPulse {
+    0%, 100% {
+        color: #FFD700;
+        text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+    }
+    50% {
+        color: #FFA500;
+        text-shadow: 0 0 20px rgba(255, 165, 0, 0.8);
+    }
+}
+
+.controls {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.control-btn {
+    padding: 12px 15px;
+    background: linear-gradient(135deg, rgba(255, 193, 7, 0.3), rgba(198, 12, 48, 0.3));
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 8px;
+    color: white;
+    cursor: pointer;
+    font-size: 1em;
+    font-weight: bold;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    text-align: center;
+    display: block;
+}
+
+.control-btn:hover {
+    background: linear-gradient(135deg, rgba(255, 193, 7, 0.5), rgba(198, 12, 48, 0.5));
+    border-color: rgba(255, 255, 255, 0.5);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+.control-btn:active {
+    transform: translateY(0);
+}
+
+.undo-btn {
+    background: linear-gradient(135deg, rgba(100, 200, 255, 0.3), rgba(100, 200, 255, 0.2));
+}
+
+.restart-btn {
+    background: linear-gradient(135deg, rgba(255, 100, 100, 0.3), rgba(255, 100, 100, 0.2));
+    display: none;
+}
+
+.menu-btn {
+    background: linear-gradient(135deg, rgba(100, 255, 100, 0.3), rgba(100, 255, 100, 0.2));
+}
+
+.last-move {
+    font-size: 1.2em;
+    font-weight: bold;
+    color: var(--madrid-gold);
+}
+
+.instructions {
+    list-style: none;
+    font-size: 0.95em;
+    line-height: 1.8;
+}
+
+.instructions li {
+    padding: 5px 0;
+    padding-left: 20px;
+    position: relative;
+}
+
+.instructions li:before {
+    content: "♟";
+    position: absolute;
+    left: 0;
+    color: var(--madrid-gold);
+}
+
+/* ===== RESPONSIVE DESIGN ===== */
+@media (max-width: 1024px) {
+    .game-main {
+        flex-direction: column;
+    }
+
+    .game-sidebar {
+        flex: 1;
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .mode-selector-card {
+        padding: 30px 20px;
+    }
+
+    .title {
+        font-size: 2em;
+    }
+
+    .mode-btn {
+        padding: 20px;
+    }
+
+    .game-header h1 {
+        font-size: 1.8em;
+    }
+
+    .chessboard {
+        padding: 10px;
+    }
+
+    .square {
+        font-size: 1.8em;
+    }
+
+    .game-sidebar {
+        grid-template-columns: 1fr;
+    }
+
+    .teams-display {
+        flex-direction: column;
+        gap: 10px;
+    }
+}
+
+@media (max-width: 480px) {
+    .game-body {
+        padding: 10px;
+    }
+
+    .title {
+        font-size: 1.5em;
+    }
+
+    .mode-buttons {
+        gap: 10px;
+    }
+
+    .mode-btn {
+        padding: 15px;
+    }
+
+    .mode-icon {
+        font-size: 2em;
+    }
+
+    .mode-text {
+        font-size: 1.1em;
+    }
+
+    .chessboard {
+        padding: 8px;
+        border-radius: 10px;
+    }
+
+    .square {
+        font-size: 1.5em;
+    }
+
+    .sidebar-card {
+        padding: 15px;
+    }
+
+    .control-btn {
+        padding: 10px;
+        font-size: 0.9em;
+    }
+
+    .winner-content {
+        min-width: auto;
+        width: 90%;
+        padding: 40px 20px;
+    }
+
+    .winner-text-large {
+        font-size: 3em;
+    }
+
+    .winner-title {
+        font-size: 2.5em;
+    }
+
+    .winner-subtitle {
+        font-size: 1.5em;
+    }
+
+    .winner-buttons {
+        flex-direction: column;
+    }
+
+    .winner-btn {
+        width: 100%;
+    }
+}
+
+/* ===== TEAM SELECTION STYLES ===== */
+.team-selection-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 25px;
+    margin-bottom: 30px;
+}
+
+.team-select-btn {
+    display: block;
+    padding: 0;
+    background: rgba(255, 255, 255, 0.25);
+    backdrop-filter: blur(15px);
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-radius: 20px;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    overflow: hidden;
+}
+
+.team-select-btn:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+.team-select-btn.madrid-btn {
+    border-color: var(--madrid-gold);
+}
+
+.team-select-btn.madrid-btn:hover {
+    background: rgba(255, 255, 255, 0.4);
+    box-shadow: 0 20px 40px rgba(255, 193, 7, 0.4);
+}
+
+.team-select-btn.barcelona-btn {
+    border-color: var(--barcelona-blue);
+}
+
+.team-select-btn.barcelona-btn:hover {
+    background: rgba(0, 77, 152, 0.3);
+    box-shadow: 0 20px 40px rgba(0, 77, 152, 0.4);
+}
+
+.team-select-content {
+    display: flex;
+    align-items: center;
+    gap: 25px;
+    padding: 25px 30px;
+}
+
+.team-select-logo {
+    width: 80px;
+    height: 80px;
+    object-fit: contain;
+    flex-shrink: 0;
+}
+
+.team-select-info {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1;
+    text-align: left;
+}
+
+.team-select-name {
+    font-size: 1.8em;
+    font-weight: bold;
+    color: rgba(0, 0, 0, 0.9);
+}
+
+.team-select-desc {
+    font-size: 1.2em;
+    color: rgba(0, 0, 0, 0.7);
+}
+
+.team-select-advantage {
+    font-size: 1em;
+    color: rgba(0, 0, 0, 0.6);
+    font-style: italic;
+}
+
+.back-button-container {
+    text-align: center;
+    margin-top: 20px;
+}
+
+.back-btn {
+    display: inline-block;
+    padding: 12px 30px;
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 10px;
+    text-decoration: none;
+    color: rgba(0, 0, 0, 0.8);
+    font-size: 1.1em;
+    transition: all 0.3s ease;
+}
+
+.back-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: translateX(-5px);
+}
+
+/* ===== WINNER MODAL ===== */
+.winner-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    animation: fadeIn 0.3s ease;
+}
+
+.winner-modal.hidden {
+    display: none;
+}
+
+.winner-content {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(20px);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 30px;
+    padding: 60px 40px;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    animation: slideInDown 0.5s ease;
+    min-width: 400px;
+}
+
+.winner-announcement {
+    margin-bottom: 40px;
+}
+
+.winner-announcement.madrid-winner {
+    color: #333;
+}
+
+.winner-announcement.barcelona-winner {
+    color: #004d98;
+}
+
+.winner-text-large {
+    font-size: 5em;
+    margin-bottom: 20px;
+    animation: pulse 0.8s ease infinite;
+}
+
+.winner-title {
+    font-size: 3.5em;
+    font-weight: bold;
+    margin-bottom: 10px;
+    text-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+.madrid-winner .winner-title {
+    background: linear-gradient(135deg, var(--madrid-white), var(--madrid-gold));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.barcelona-winner .winner-title {
+    background: linear-gradient(135deg, var(--barcelona-blue), var(--barcelona-red));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.winner-subtitle {
+    font-size: 2em;
+    font-weight: bold;
+    color: rgba(255, 255, 255, 0.9);
+    margin-bottom: 20px;
+}
+
+.winner-sparkles {
+    font-size: 2em;
+    animation: sparkle 0.6s ease infinite;
+}
+
+@keyframes sparkle {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.6;
+        transform: scale(1.2);
+    }
+}
+
+.winner-buttons {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+}
+
+.winner-btn {
+    padding: 15px 30px;
+    font-size: 1.1em;
+    font-weight: bold;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    display: inline-block;
+}
+
+.winner-btn.restart {
+    background: linear-gradient(135deg, rgba(76, 175, 80, 0.5), rgba(76, 175, 80, 0.3));
+    color: white;
+    border: 2px solid rgba(76, 175, 80, 0.8);
+}
+
+.winner-btn.restart:hover {
+    background: linear-gradient(135deg, rgba(76, 175, 80, 0.8), rgba(76, 175, 80, 0.6));
+    border-color: rgba(76, 175, 80, 1);
+    transform: translateY(-3px);
+    box-shadow: 0 10px 25px rgba(76, 175, 80, 0.4);
+}
+
+.winner-btn.menu {
+    background: linear-gradient(135deg, rgba(100, 200, 255, 0.5), rgba(100, 200, 255, 0.3));
+    color: white;
+    border: 2px solid rgba(100, 200, 255, 0.8);
+}
+
+.winner-btn.menu:hover {
+    background: linear-gradient(135deg, rgba(100, 200, 255, 0.8), rgba(100, 200, 255, 0.6));
+    border-color: rgba(100, 200, 255, 1);
+    transform: translateY(-3px);
+    box-shadow: 0 10px 25px rgba(100, 200, 255, 0.4);
+}
