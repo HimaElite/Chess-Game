@@ -16,11 +16,56 @@ import random as rand
 #                              position one to two
 ### --------------------------------------------- ###
 
-def ai_move(game_board, undo_stack):
+INF = 10**9
+
+def ai_move_random(game_board, undo_stack):
+    # this is old version and it works random
+
     available_moves = all_legal_moves(game_board)
     choice = rand.choice(available_moves)
     from_sq = game_board.square_name(choice[0])
     to_sq = game_board.square_name(choice[1])
+    undo = take_move(game_board, from_sq, to_sq)
+    if undo:
+        undo_stack.append(undo)
+    the_move = f"AI played piece from {from_sq} to {to_sq}"
+    return undo_stack, the_move
+
+def minmax(game_board, depth):
+    if depth == 0:
+        return evaluate(game_board)
+    
+    if not all_legal_moves(game_board):
+        if is_king_in_check(game_board, game_board.side_to_move):
+            return -INF
+        else:
+            return 0
+        
+    best_eval = -INF
+    color = game_board.side_to_move
+    active = list(game_board.active_squares)
+    for i in active:
+        sq = game_board.squares[i]
+        if (sq & 24) != color:
+            continue
+
+        for from_sq, to_sq, promo in apply_moves(game_board, i):
+            undo = make_move(game_board, from_sq, to_sq, promo, update_fen=False)
+            evaluation = -minmax(game_board, depth - 1)
+            best_eval = max(evaluation, best_eval)
+            undo_move(game_board, undo, update_fen=False)
+
+    return best_eval
+
+def ai_move(game_board, undo_stack):
+    moves = all_legal_moves(game_board)
+    utilities = {move: 0 for move in moves}
+    for move in moves:
+        utilities[move] = minmax(game_board, 3)
+
+    best = max(utilities, key=utilities.get)
+    from_sq = game_board.square_name(best[0])
+    to_sq = game_board.square_name(best[1])
     undo = take_move(game_board, from_sq, to_sq)
     if undo:
         undo_stack.append(undo)
@@ -91,7 +136,6 @@ def human_move(game_board, undo_stack, q, option=False):
             undo_stack.append(undo)
 
         return undo_stack, q
-
 
 def game(option):
     # start the game

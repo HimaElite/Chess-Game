@@ -54,7 +54,7 @@ def get_evaluation(b: Board):
         p = b.squares[sq]
         if p == 0:
             continue
-
+        
         color = p & 24
         pt = p & 7
         base = Piece.get_value(pt)
@@ -78,3 +78,26 @@ def get_evaluation(b: Board):
         score = -score
 
     return score
+
+def evaluate(b: Board):
+    white_eval, black_eval = count_materials_value(b)
+
+    evaluation = white_eval - black_eval
+    if b.side_to_move == Piece.WHITE:
+        return evaluation
+    else:
+        return -evaluation
+
+def count_materials_value(b: Board):
+    white_materials = 0
+    black_materials = 0
+    for i in b.active_squares:
+        sq = b.squares[i]
+        pt = sq & 7
+        color = sq & 24
+        if color == Piece.WHITE:
+            white_materials += Piece.get_value(pt)
+        else:
+            black_materials += Piece.get_value(pt)
+
+    return white_materials, black_materials

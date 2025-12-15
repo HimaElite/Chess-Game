@@ -24,16 +24,16 @@ class Piece:
     def get_value(piece):
         values = {
             Piece.PAWN: 100,
-            Piece.KNIGHT: 320,
-            Piece.BISHOP: 330,
+            Piece.KNIGHT: 300,
+            Piece.BISHOP: 300,
             Piece.ROOK: 500,
             Piece.QUEEN: 900,
             Piece.KING: 0,
         }
-
         return values.get(piece)
 
     def get_heatmap(piece, endgame=False):
+
         pawn_heatmap = (
             0, 0, 0, 0, 0, 0, 0, 0,
             50, 50, 50, 50, 50, 50, 50, 50,
