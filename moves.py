@@ -4,16 +4,16 @@ from board import *
 
 # ------------------- HELPERS ------------------- #
 
-def _rank(index):
+def rank(index):
     return index // 8
 
-def _file(index):
+def file_(index):
     return index % 8
 
-def _in_board(index):
+def in_board(index):
     return 0 <= index <= 63
 
-def _opponent(color):
+def opponent(color):
     return Piece.BLACK if color == Piece.WHITE else Piece.WHITE
 
 # =============================================== #
@@ -22,10 +22,10 @@ def _opponent(color):
 
 # ------------------- GENERATE MOVES ------------------- #
 
-def _sliding_moves(b, index, color, directions):
+def sliding_moves(b, index, color, directions):
     moves = []
     for y, x in directions:
-        r, f = _rank(index) + y, _file(index) + x
+        r, f = rank(index) + y, file_(index) + x
         while 0 <= r < 8 and 0 <= f < 8:
             sq = r * 8 + f
             target = b.squares[sq]
@@ -39,16 +39,16 @@ def _sliding_moves(b, index, color, directions):
             f += x
     return moves
 
-def _pawn_moves(b, index, color):
+def pawn_moves(b, index, color):
     moves = []
-    r, f = _rank(index), _file(index)
+    r, f = rank(index), file_(index)
     forward = 8 if color == Piece.WHITE else -8
     start_rank = 1 if color == Piece.WHITE else 6
     promo_rank = 7 if color == Piece.WHITE else 0
 
     one = index + forward
-    if _in_board(one) and b.squares[one] == 0:
-        if _rank(one) == promo_rank:
+    if in_board(one) and b.squares[one] == 0:
+        if rank(one) == promo_rank:
             for promo in [Piece.QUEEN, Piece.ROOK, Piece.BISHOP, Piece.KNIGHT]:
                 moves.append((index, one, promo))
         else:
@@ -65,14 +65,14 @@ def _pawn_moves(b, index, color):
 
     for off in caps:
         to_sq = index + off
-        if not _in_board(to_sq):
+        if not in_board(to_sq):
             continue
-        if abs(_file(to_sq) - f) != 1:
+        if abs(file_(to_sq) - f) != 1:
             continue
 
         target = b.squares[to_sq]
         if target != 0 and (target & 24) != color:
-            if _rank(to_sq) == promo_rank:
+            if rank(to_sq) == promo_rank:
                 for promo in [Piece.QUEEN, Piece.ROOK, Piece.BISHOP, Piece.KNIGHT]:
                     moves.append((index, to_sq, promo))
             else:
@@ -83,15 +83,15 @@ def _pawn_moves(b, index, color):
 
     return moves
 
-def _knight_moves(b, index, color):
+def knight_moves(b, index, color):
     moves = []
-    r, f = _rank(index), _file(index)
+    r, f = rank(index), file_(index)
     offsets = [17, 15, 10, 6, -6, -10, -15, -17]
     for off in offsets:
         to_sq = index + off
-        if not _in_board(to_sq):
+        if not in_board(to_sq):
             continue
-        tr, tf = _rank(to_sq), _file(to_sq)
+        tr, tf = rank(to_sq), file_(to_sq)
         if not ((abs(r - tr) == 2 and abs(f - tf) == 1) or (abs(r - tr) == 1 and abs(f - tf) == 2)):
             continue
         target = b.squares[to_sq]
@@ -99,15 +99,15 @@ def _knight_moves(b, index, color):
             moves.append((index, to_sq, None))
     return moves
 
-def _king_moves(b, index, color):
+def king_moves(b, index, color):
     moves = []
-    r, f = _rank(index), _file(index)
+    r, f = rank(index), file_(index)
     offsets = [9, 8, 7, 1, -1, -7, -8, -9]
     for off in offsets:
         to_sq = index + off
-        if not _in_board(to_sq):
+        if not in_board(to_sq):
             continue
-        if abs(_file(to_sq) - f) > 1:
+        if abs(file_(to_sq) - f) > 1:
             continue
         target = b.squares[to_sq]
         if target == 0 or (target & 24) != color:
@@ -136,6 +136,7 @@ def _king_moves(b, index, color):
     return moves
 
 def apply_moves(b, index):
+    # دي علشان تنفذ النقلة بالعافية وتشوف هل متاحة ولا لأ
     sq = b.squares[index]
     if sq == 0:
         return []
@@ -144,21 +145,21 @@ def apply_moves(b, index):
     color = sq & 24
 
     if pt == Piece.PAWN:
-        return _pawn_moves(b, index, color)
+        return pawn_moves(b, index, color)
     if pt == Piece.KNIGHT:
-        return _knight_moves(b, index, color)
+        return knight_moves(b, index, color)
     if pt == Piece.BISHOP:
-        return _sliding_moves(b, index, color, [(1, 1), (1, -1), (-1, 1), (-1, -1)])
+        return sliding_moves(b, index, color, [(1, 1), (1, -1), (-1, 1), (-1, -1)])
     if pt == Piece.ROOK:
-        return _sliding_moves(b, index, color, [(1, 0), (-1, 0), (0, 1), (0, -1)])
+        return sliding_moves(b, index, color, [(1, 0), (-1, 0), (0, 1), (0, -1)])
     if pt == Piece.QUEEN:
-        return _sliding_moves(b, index, color, [(1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (1, -1), (-1, 1), (-1, -1)])
+        return sliding_moves(b, index, color, [(1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (1, -1), (-1, 1), (-1, -1)])
     if pt == Piece.KING:
-        return _king_moves(b, index, color)
+        return king_moves(b, index, color)
 
     return []
 
-def _update_castling_rights(b, from_sq, to_sq, moved_piece, captured_piece):
+def update_castling_rights(b, from_sq, to_sq, moved_piece, captured_piece):
     if (moved_piece & 7) == Piece.KING:
         if (moved_piece & 24) == Piece.WHITE:
             b.castling = b.castling.replace('K', '').replace('Q', '')
@@ -175,7 +176,6 @@ def _update_castling_rights(b, from_sq, to_sq, moved_piece, captured_piece):
         elif from_sq == 63:
             b.castling = b.castling.replace('k', '')
 
-
 # ====================================================== #
 
 
@@ -183,6 +183,10 @@ def _update_castling_rights(b, from_sq, to_sq, moved_piece, captured_piece):
 # ------------------- MOVE ACTION ------------------- #
 
 def move_generation_test(b, depth):
+    # دي كانت فانكشن بختبر فيها اللعبة علشان اشوف هل هتعرف تجيب
+    # كل النقلات الممكنة علي العمق اللي احدده، وفعلا جابت ارقام مظبوطة
+    # الفانكشن ملهاش دور فاللعبة هي بس كنت بتأكد من خلالها علي صحة اللعبة
+
     if depth <= 0:
         return 1
     
@@ -191,8 +195,6 @@ def move_generation_test(b, depth):
     active = list(b.active_squares)
     for i in active:
         sq = b.squares[i]
-        if sq == 0:
-            continue
         if (sq & 24) != color:
             continue
 
@@ -209,6 +211,8 @@ def move_generation_test(b, depth):
 
 def take_move(b, from_pos, to_pos, promotion=None):
     # check the action that player want to do
+    # بيراجع الاول علي الناقلة اللي اللاعب عاوز يعملها
+    # ويشوف هي تمام ولا لأ، لو اوكيه هيبعتها تتنفذ، لو لأ مش هيبعتها
 
     try:
         from_sq = b.get_index(from_pos)
@@ -247,6 +251,8 @@ def take_move(b, from_pos, to_pos, promotion=None):
     return undo
 
 def make_move(b, from_sq, to_sq, promotion=None, update_fen=True):
+    # الفانكشن دي هي اللي مسؤولة عن تنفيذ النقلة وتحديث البورد
+    # وتبعت معلومات عن النقلة علشان تتخزن فال undo
     moved_piece = b.squares[from_sq]
     captured_piece = b.squares[to_sq]
 
@@ -294,7 +300,7 @@ def make_move(b, from_sq, to_sq, promotion=None, update_fen=True):
 
     b.squares[from_sq] = 0
     if pt == Piece.PAWN:
-        if (color == Piece.WHITE and _rank(to_sq) == 7) or (color == Piece.BLACK and _rank(to_sq) == 0):
+        if (color == Piece.WHITE and rank(to_sq) == 7) or (color == Piece.BLACK and rank(to_sq) == 0):
             promo = promotion if promotion is not None else Piece.QUEEN
             b.squares[to_sq] = (color | promo)
         else:
@@ -337,7 +343,7 @@ def make_move(b, from_sq, to_sq, promotion=None, update_fen=True):
             b.active_squares.discard(rf)
             b.active_squares.add(rt)
 
-    _update_castling_rights(b, from_sq, to_sq, moved_piece, undo['captured'])
+    update_castling_rights(b, from_sq, to_sq, moved_piece, undo['captured'])
     
     b.switch_turn()
     if update_fen:
@@ -345,6 +351,8 @@ def make_move(b, from_sq, to_sq, promotion=None, update_fen=True):
     return undo
 
 def undo_move(b, undo, update_fen=True):
+    # ده بيعمل استرجاع للنقلة اللي فاتت
+
     from_sq = undo['from']
     to_sq = undo['to']
     b.side_to_move = undo['prev_side']
@@ -386,6 +394,8 @@ def undo_move(b, undo, update_fen=True):
         b.generate_fen_string()
 
 def legal_moves(b, index):
+    # الفانكشن دي علشان تجيب النقلات المسموح بيها لقطعة او مربع واحد بس
+    
     sq = b.squares[index]
     if sq == 0:
         return []
@@ -403,10 +413,12 @@ def legal_moves(b, index):
     return moves
 
 def all_legal_moves(b):
+    # الفانكشن دي علشان تجيب كل النقلات المتاحة فالدور
+
     all_moves = []
     active = list(b.active_squares)
     for i in active:
-        if b.squares[i] != 0 and (b.squares[i] & 24) == b.side_to_move:
+        if (b.squares[i] & 24) == b.side_to_move:
             for to_sq in legal_moves(b, i):
                 all_moves.append((i, to_sq))
     return all_moves
@@ -419,7 +431,7 @@ def all_legal_moves(b):
 
 def is_king_in_check(b, color):
     king_sq = b.white_king if color == Piece.WHITE else b.black_king
-    return is_square_attacked(b, king_sq, _opponent(color))
+    return is_square_attacked(b, king_sq, opponent(color))
 
 def is_square_attacked(b, index, by_color):
     if by_color == Piece.WHITE:
@@ -429,9 +441,9 @@ def is_square_attacked(b, index, by_color):
 
     for off in pawn_offsets:
         from_sq = index - off
-        if not _in_board(from_sq):
+        if not in_board(from_sq):
             continue
-        if abs(_file(from_sq) - _file(index)) != 1:
+        if abs(file_(from_sq) - file_(index)) != 1:
             continue
         p = b.squares[from_sq]
         if p != 0 and (p & 24) == by_color and (p & 7) == Piece.PAWN:
@@ -440,10 +452,10 @@ def is_square_attacked(b, index, by_color):
     knight_offsets = [17, 15, 10, 6, -6, -10, -15, -17]
     for off in knight_offsets:
         from_sq = index - off
-        if not _in_board(from_sq):
+        if not in_board(from_sq):
             continue
-        fr, ff = _rank(from_sq), _file(from_sq)
-        tr, tf = _rank(index), _file(index)
+        fr, ff = rank(from_sq), file_(from_sq)
+        tr, tf = rank(index), file_(index)
         if not ((abs(fr - tr) == 2 and abs(ff - tf) == 1) or (abs(fr - tr) == 1 and abs(ff - tf) == 2)):
             continue
         p = b.squares[from_sq]
@@ -453,9 +465,9 @@ def is_square_attacked(b, index, by_color):
     king_offsets = [9, 8, 7, 1, -1, -7, -8, -9]
     for off in king_offsets:
         from_sq = index - off
-        if not _in_board(from_sq):
+        if not in_board(from_sq):
             continue
-        if abs(_file(from_sq) - _file(index)) > 1:
+        if abs(file_(from_sq) - file_(index)) > 1:
             continue
         p = b.squares[from_sq]
         if p != 0 and (p & 24) == by_color and (p & 7) == Piece.KING:
@@ -465,7 +477,7 @@ def is_square_attacked(b, index, by_color):
                 (1, 1), (1, -1), (-1, 1), (-1, -1)]
         
     for y, x in directions:
-        r, f = _rank(index) + y, _file(index) + x
+        r, f = rank(index) + y, file_(index) + x
         while 0 <= r < 8 and 0 <= f < 8:
             sq = r * 8 + f
             p = b.squares[sq]

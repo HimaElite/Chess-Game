@@ -27,7 +27,6 @@ def check_terminals(b: Board, color):
     #   50-move rule, stalemate, or no enough materials
 
     result = None
-    Draw = 0
     num_pieces = b.num_pieces
 
     if num_pieces <= 3:
@@ -41,11 +40,11 @@ def check_terminals(b: Board, color):
                 break
         if minor:
             result = "No enough materials!"
-            return Draw, result
+            return 0, result
     
     if b.halfmove_clock >= 50:
         result = "50-move rule!"
-        return Draw, result
+        return 0, result
     
     if not has_legal_move(b):
         if is_king_in_check(b, b.side_to_move):
@@ -57,7 +56,7 @@ def check_terminals(b: Board, color):
                 return -1, result
         else:
             result = "This is Stalemate!"
-            return Draw, result
+            return 0, result
         
     return None, result
 
@@ -82,6 +81,7 @@ def get_evaluation(b: Board):
         else:
             p_heatmap = Piece.get_heatmap(pt)
             bonus = p_heatmap[sq] if (p_heatmap is not None and color == Piece.WHITE) else 0
+            
             if p_heatmap is not None and color == Piece.BLACK:
                 bonus = p_heatmap[_mirror(sq)]
 

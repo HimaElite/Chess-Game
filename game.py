@@ -90,6 +90,7 @@ def human_move(game_board, undo_stack, q):
 
 
 def game(option):
+    # start the game
     undo_stack = []
     game_board = Board()
     final_result = None
@@ -99,6 +100,7 @@ def game(option):
         game_board.present_board()
         color = Piece.BLACK if game_board.side_to_move == Piece.WHITE else Piece.WHITE
         print(get_evaluation(game_board))
+
         t, r = check_terminals(game_board, color)
         if t != None:
             if t == 0:
@@ -130,7 +132,7 @@ def game(option):
 
 def main():
     game_board = Board()
-    for d in range(1, 8):
+    for d in range(1, 6):
         print(move_generation_test(game_board, d))
 
 
