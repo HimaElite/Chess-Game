@@ -18,32 +18,14 @@ import random as rand
 
 INF = 10**9
 
-def ai_move_random(game_board, undo_stack):
-    # this is old version and it works random
-
-    available_moves = all_legal_moves(game_board)
-    choice = rand.choice(available_moves)
-    from_sq = game_board.square_name(choice[0])
-    to_sq = game_board.square_name(choice[1])
-    undo = take_move(game_board, from_sq, to_sq)
-    if undo:
-        undo_stack.append(undo)
-    the_move = f"AI played piece from {from_sq} to {to_sq}"
-    return undo_stack, the_move
-
-def minmax(game_board, depth):
+def minmax(game_board, depth, alpha=-INF, beta=INF):
     if depth == 0:
         return evaluate(game_board)
     
-    if not all_legal_moves(game_board):
-        if is_king_in_check(game_board, game_board.side_to_move):
-            return -INF
-        else:
-            return 0
-        
     best_eval = -INF
     color = game_board.side_to_move
     active = list(game_board.active_squares)
+    has_legal = False
     for i in active:
         sq = game_board.squares[i]
         if (sq & 24) != color:
@@ -51,27 +33,74 @@ def minmax(game_board, depth):
 
         for from_sq, to_sq, promo in apply_moves(game_board, i):
             undo = make_move(game_board, from_sq, to_sq, promo, update_fen=False)
+            if is_king_in_check(game_board, color):
+                undo_move(game_board, undo, update_fen=False)
+                continue
+            has_legal = True
             evaluation = -minmax(game_board, depth - 1)
-            best_eval = max(evaluation, best_eval)
             undo_move(game_board, undo, update_fen=False)
+            
+            if evaluation > best_eval:
+                best_eval = evaluation
+
+            if best_eval > alpha:
+                alpha = best_eval
+
+            if alpha >= beta:
+                return best_eval
+            
+    if not has_legal:
+        if is_king_in_check(game_board, color):
+            return -INF
+        return 0
 
     return best_eval
 
 def ai_move(game_board, undo_stack):
-    moves = all_legal_moves(game_board)
-    utilities = {move: 0 for move in moves}
-    for move in moves:
-        utilities[move] = minmax(game_board, 3)
+    best_eval = -INF
+    best_move = None
 
-    best = max(utilities, key=utilities.get)
-    from_sq = game_board.square_name(best[0])
-    to_sq = game_board.square_name(best[1])
-    undo = take_move(game_board, from_sq, to_sq)
+    color = game_board.side_to_move
+    active = list(game_board.active_squares)
+
+    for i in active:
+        sq = game_board.squares[i]
+        if (sq & 24) != color:
+            continue
+
+        for from_sq, to_sq, promo in apply_moves(game_board, i):
+            undo = make_move(game_board, from_sq, to_sq, promo, update_fen=False)
+
+            if is_king_in_check(game_board, color):
+                undo_move(game_board, undo, update_fen=False)
+                continue
+
+            evaluation = -minmax(game_board, 3)
+
+            undo_move(game_board, undo, update_fen=False)
+
+            if evaluation > best_eval:
+                best_eval = evaluation
+                best_move = (from_sq, to_sq, promo)
+
+    if best_move is None:
+        return undo_stack, "AI has no legal moves!"
+
+    from_sq, to_sq, promo = best_move
+    undo = take_move(game_board, from_sq, to_sq, promo)
     if undo:
         undo_stack.append(undo)
-    the_move = f"AI played piece from {from_sq} to {to_sq}"
-    return undo_stack, the_move
+    
+    from_name = game_board.square_name(from_sq)
+    to_name = game_board.square_name(to_sq)
 
+    if promo is not None:
+        promo_name = Piece.get_piece(promo | color).upper()
+        the_move = f"AI played piece from {from_name} to {to_name} promoting to {promo_name}"
+    else:
+        the_move = f"AI played piece from {from_sq} to {to_sq}"
+    
+    return undo_stack, the_move
 
 def human_move(game_board, undo_stack, q, option=False):
     while True:
