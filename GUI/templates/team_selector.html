@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <title>El Clásico Chess - Choose Your Team</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="mode-selector-body">
+    <div class="container">
+        <div class="mode-selector-card">
+            <div class="logo-section">
+                <h1 class="title">⚽ Choose Your Team ⚽</h1>
+                <p class="subtitle">Human vs AI Mode</p>
+            </div>
+
+            <div class="mode-selection">
+                <h2>Which team do you want to play as?</h2>
+                
+                <div class="team-selection-buttons">
+                    <a href="/game/2?team=madrid" class="team-select-btn madrid-btn">
+                        <div class="team-select-content">
+                            <img src="/static/images/real-madrid-logo.png" alt="Real Madrid" class="team-select-logo">
+                            <div class="team-select-info">
+                                <span class="team-select-name">Real Madrid</span>
+                                <span class="team-select-desc">⚪ Play as White pieces</span>
+                                <span class="team-select-advantage">✓ First move advantage</span>
+                            </div>
+                        </div>
+                    </a>
+
+                    <a href="/game/2?team=barcelona" class="team-select-btn barcelona-btn">
+                        <div class="team-select-content">
+                            <img src="/static/images/barcelona-logo.png" alt="Barcelona" class="team-select-logo">
+                            <div class="team-select-info">
+                                <span class="team-select-name">Barcelona</span>
+                                <span class="team-select-desc">⚫ Play as Black pieces</span>
+                                <span class="team-select-advantage">✓ Strategic challenge</span>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+
+                <div class="back-button-container">
+                    <a href="/" class="back-btn">
+                        ← Back to Mode Selection
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

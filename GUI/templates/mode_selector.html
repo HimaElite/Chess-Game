@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <title>El Clásico Chess - Game Mode Selector</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="mode-selector-body">
+    <!-- Video Background with fallback to image -->
+    <video id="background-video" autoplay loop muted playsinline class="video-background">
+        <source src="/videos/El Clasico Real Madrid v Barça.mp4" type="video/mp4">
+    </video>
+    
+    <!-- Background Music -->
+    <audio id="background-music" loop>
+        <source src="/sounds/Ambient sports crowd sound.wav" type="audio/wav">
+    </audio>
+    <div class="container">
+        <div class="mode-selector-card">
+            <div class="logo-section">
+                <h1 class="title">⚽ El Clásico Chess ⚽</h1>
+                <p class="subtitle">Real Madrid vs Barcelona</p>
+            </div>
+
+            <div class="mode-selection">
+                <h2>Select Game Mode</h2>
+                
+                <div class="mode-buttons">
+                    <button class="mode-btn human-vs-human" data-mode="1">
+                        <span class="mode-icon">👥</span>
+                        <span class="mode-text">Human vs Human</span>
+                        <span class="mode-desc">Play with a friend on the same device</span>
+                    </button>
+
+                    <button class="mode-btn human-vs-ai" data-mode="2">
+                        <span class="mode-icon">🤖</span>
+                        <span class="mode-text">Human vs AI</span>
+                        <span class="mode-desc">Play against the computer</span>
+                    </button>
+
+                    <button class="mode-btn ai-vs-ai" data-mode="3">
+                        <span class="mode-icon">⚔️</span>
+                        <span class="mode-text">AI vs AI</span>
+                        <span class="mode-desc">Watch two AIs battle it out</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="teams-info">
+                <div class="team barcelona" data-team="barcelona">
+                    <h3>🔵 Barcelona</h3>
+                    <p>The blaugranas</p>
+                </div>
+                <div class="team madrid" data-team="madrid">
+                    <h3>⚪ Real Madrid</h3>
+                    <p>The merengues</p>
+                </div>
+            </div>
+
+            <script>
+                let selectedMode = null;
+                const bgMusic = document.getElementById('background-music');
+                const bgVideo = document.getElementById('background-video');
+                
+                // Handle video load error - fallback to image background
+                if (bgVideo) {
+                    bgVideo.addEventListener('error', function() {
+                        console.log('Video not found, using image background');
+                        bgVideo.classList.add('hidden');
+                    });
+                    
+                    // Also hide video if it fails to load
+                    bgVideo.addEventListener('stalled', function() {
+                        bgVideo.classList.add('hidden');
+                    });
+                }
+                
+                // Try to play music on page load
+                document.addEventListener('DOMContentLoaded', function() {
+                    bgMusic.play().catch(e => {
+                        // If autoplay is blocked, play on first user interaction
+                        console.log('Autoplay blocked, waiting for user interaction');
+                    });
+                });
+                
+                // Play music on any user interaction
+                function playMusic() {
+                    if (bgMusic.paused) {
+                        bgMusic.play().catch(e => console.log('Music play failed:', e));
+                    }
+                }
+
+                // Mode selection
+                document.querySelectorAll('.mode-btn').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        playMusic(); // Start music on interaction
+                        selectedMode = this.dataset.mode;
+                        
+                        // Remove active class from all buttons
+                        document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+                        
+                        // Add active class to clicked button
+                        this.classList.add('active');
+                        
+                        // Highlight team section
+                        document.querySelector('.teams-info').classList.add('active');
+                    });
+                });
+
+                // Team selection and start game
+                document.querySelectorAll('.team').forEach(teamCard => {
+                    teamCard.addEventListener('click', function() {
+                        if (!selectedMode) {
+                            alert('Please select a game mode first!');
+                            return;
+                        }
+                        
+                        const team = this.dataset.team;
+                        window.location.href = `/game/${selectedMode}?team=${team}`;
+                    });
+                });
+            </script>
+        </div>
+    </div>
+</body>
+</html>
