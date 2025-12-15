@@ -10,6 +10,7 @@ import random as rand
 #   ['q', 'quit', 'exit'] ---> to quit
 #   'fen' ---> to get the fen string of the board
 #   'undo' ---> to undo your last move
+#   'all moves' ---> it gives you all legal moves
 #   'moves position' ---> this will return avalable
 #                         moves for this position
 #   'position1 position2' ---> to move a piece from
