@@ -1,5 +1,5 @@
-from .piece import Piece
-from .board import *
+from piece import Piece
+from board import *
 
 
 # ------------------- HELPERS ------------------- #

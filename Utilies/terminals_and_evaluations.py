@@ -1,6 +1,6 @@
-from .board import Board
-from .piece import Piece
-from .moves import *
+from board import Board
+from piece import Piece
+from moves import *
 
 def check_terminals(b: Board, color):
     # there are two end of chess games: (Draw or Win)

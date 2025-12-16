@@ -1,7 +1,7 @@
-from .board import Board
-from .piece import Piece
-from .moves import *
-from .terminals_and_evaluations import *
+from board import Board
+from piece import Piece
+from moves import *
+from terminals_and_evaluations import *
 import random as rand
 
 ### --------------------------------------------- ###
@@ -22,7 +22,7 @@ INF = 10**9
 def minmax(game_board, depth, alpha=-INF, beta=INF):
     if depth == 0:
         return evaluate(game_board)
-    
+
     best_eval = -INF
     color = game_board.side_to_move
     active = list(game_board.active_squares)
@@ -38,9 +38,9 @@ def minmax(game_board, depth, alpha=-INF, beta=INF):
                 undo_move(game_board, undo, update_fen=False)
                 continue
             has_legal = True
-            evaluation = -minmax(game_board, depth - 1)
+            evaluation = -minmax(game_board, depth - 1, -beta, -alpha)
             undo_move(game_board, undo, update_fen=False)
-            
+
             if evaluation > best_eval:
                 best_eval = evaluation
 
@@ -49,7 +49,7 @@ def minmax(game_board, depth, alpha=-INF, beta=INF):
 
             if alpha >= beta:
                 return best_eval
-            
+
     if not has_legal:
         if is_king_in_check(game_board, color):
             return -INF
@@ -83,23 +83,23 @@ def ai_move(game_board, undo_stack):
             if evaluation > best_eval:
                 best_eval = evaluation
                 best_move = (from_sq, to_sq, promo)
+
     if best_move is None:
         return undo_stack, "AI has no legal moves!"
 
     from_sq, to_sq, promo = best_move
-    from_name = game_board.square_name(from_sq)
-    to_name = game_board.square_name(to_sq)
-    
-    undo = take_move(game_board, from_name, to_name, promo)
+    undo = make_move(game_board, from_sq, to_sq, promo)
     if undo:
         undo_stack.append(undo)
+
+    from_name = game_board.square_name(from_sq)
+    to_name = game_board.square_name(to_sq)
 
     if promo is not None:
         promo_name = Piece.get_piece(promo | color).upper()
         the_move = f"AI played piece from {from_name} to {to_name} promoting to {promo_name}"
     else:
         the_move = f"AI played piece from {from_name} to {to_name}"
-    
     return undo_stack, the_move
 
 def human_move(game_board, undo_stack, q, option=False):

@@ -1,4 +1,4 @@
-from .piece import Piece
+from piece import Piece
 # "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 b -- - 0 1"
 class Board:
     INIT_STATE = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1" # ده يبق fen string
