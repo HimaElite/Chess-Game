@@ -44,17 +44,28 @@ def check_terminals(b: Board, color):
         
     return None, result
 
-def get_evaluation(b: Board):
+def evaluate(b: Board):
     def _mirror(sq):
         return (7 - (sq // 8)) * 8 + (sq % 8)
 
     endgame = (b.num_pieces <= 10)
+
     score = 0
+    white_bishops = 0
+    black_bishops = 0
+
+    white_pawn_count = [0] * 8
+    black_pawn_count = [0] * 8
+    max_black_pawn_rank = [-1] * 8
+    min_white_pawn_rank = [8] * 8
+    rooks = []
+    pawns = []
+
     for sq in b.active_squares:
         p = b.squares[sq]
         if p == 0:
             continue
-        
+
         color = p & 24
         pt = p & 7
         base = Piece.get_value(pt)
@@ -64,29 +75,77 @@ def get_evaluation(b: Board):
             bonus = p_heatmap[sq] if color == Piece.WHITE else p_heatmap[_mirror(sq)]
         else:
             p_heatmap = Piece.get_heatmap(pt)
-            bonus = p_heatmap[sq] if (p_heatmap is not None and color == Piece.WHITE) else 0
-            
-            if p_heatmap is not None and color == Piece.BLACK:
-                bonus = p_heatmap[_mirror(sq)]
+            bonus = 0
+            if p_heatmap is not None:
+                bonus = p_heatmap[sq] if color == Piece.WHITE else p_heatmap[_mirror(sq)]
+
+        if pt == Piece.BISHOP:
+            if color == Piece.WHITE:
+                white_bishops += 1
+            else:
+                black_bishops += 1
+
+        if pt == Piece.PAWN:
+            f = sq % 8
+            r = sq // 8
+            pawns.append((color, r, f))
+            if color == Piece.WHITE:
+                white_pawn_count[f] += 1
+                if r < min_white_pawn_rank[f]:
+                    min_white_pawn_rank[f] = r
+            else:
+                black_pawn_count[f] += 1
+                if r > max_black_pawn_rank[f]:
+                    max_black_pawn_rank[f] = r
+
+        if pt == Piece.ROOK:
+            rooks.append((color, sq % 8))
 
         if color == Piece.WHITE:
             score += base + bonus
         else:
             score -= base + bonus
 
+    if white_bishops >= 2:
+        score += 30
+    if black_bishops >= 2:
+        score -= 30
+
+    for color, f in rooks:
+        open_file = (white_pawn_count[f] == 0 and black_pawn_count[f] == 0)
+        semi_open = (white_pawn_count[f] == 0) if color == Piece.WHITE else (black_pawn_count[f] == 0)
+
+        bonus = 0
+        if open_file:
+            bonus = 15
+        elif semi_open:
+            bonus = 7
+
+        score += bonus if color == Piece.WHITE else -bonus
+
+    passed_bonus = [0, 5, 10, 20, 35, 60, 90, 0]
+    for color, r, f in pawns:
+        if color == Piece.WHITE:
+            passed = True
+            for ff in (f - 1, f, f + 1):
+                if 0 <= ff < 8 and max_black_pawn_rank[ff] > r:
+                    passed = False
+                    break
+            if passed:
+                score += passed_bonus[r]
+        else:
+            passed = True
+            for ff in (f - 1, f, f + 1):
+                if 0 <= ff < 8 and min_white_pawn_rank[ff] < r:
+                    passed = False
+                    break
+            if passed:
+                score -= passed_bonus[7 - r]
+
     if b.side_to_move == Piece.BLACK:
         score = -score
 
     return score
-
-def evaluate(b: Board):
-    white_eval, black_eval = count_materials_value(b)
-
-    evaluation = white_eval - black_eval
-    if b.side_to_move == Piece.WHITE:
-        return evaluation
-    else:
-        return -evaluation
 
 def count_materials_value(b: Board):
     white_materials = 0

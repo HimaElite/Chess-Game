@@ -2,7 +2,7 @@ from board import Board
 from piece import Piece
 from moves import *
 from terminals_and_evaluations import *
-import random as rand
+# from algorithm import Algorithm
 
 ### --------------------------------------------- ###
 #   ALL AVALABLE COMMANDS:
@@ -17,89 +17,118 @@ import random as rand
 #                              position one to two
 ### --------------------------------------------- ###
 
+# algorithm = Algorithm()
 INF = 10**9
 
-def minmax(game_board, depth, alpha=-INF, beta=INF):
-    if depth == 0:
-        return evaluate(game_board)
-
-    best_eval = -INF
-    color = game_board.side_to_move
-    active = list(game_board.active_squares)
-    has_legal = False
-    for i in active:
-        sq = game_board.squares[i]
-        if (sq & 24) != color:
-            continue
-
-        for from_sq, to_sq, promo in apply_moves(game_board, i):
-            undo = make_move(game_board, from_sq, to_sq, promo, update_fen=False)
-            if is_king_in_check(game_board, color):
-                undo_move(game_board, undo, update_fen=False)
-                continue
-            has_legal = True
-            evaluation = -minmax(game_board, depth - 1, -beta, -alpha)
-            undo_move(game_board, undo, update_fen=False)
-
-            if evaluation > best_eval:
-                best_eval = evaluation
-
-            if best_eval > alpha:
-                alpha = best_eval
-
-            if alpha >= beta:
-                return best_eval
-
-    if not has_legal:
-        if is_king_in_check(game_board, color):
-            return -INF
-        return 0
-
-    return best_eval
-
 def ai_move(game_board, undo_stack):
-    best_eval = -INF
-    best_move = None
+    MATE_SCORE = 100000
+    INF = 10**9
 
-    color = game_board.side_to_move
-    active = list(game_board.active_squares)
+    def _insufficient_material(b):
+        if b.num_pieces <= 3:
+            minor = 0
+            for sq in b.active_squares:
+                p = b.squares[sq]
+                if p == 0:
+                    continue
+                pt = p & 7
+                if pt == Piece.BISHOP or pt == Piece.KNIGHT:
+                    minor += 1
+                elif pt != Piece.KING:
+                    return False
+            return minor <= 1
+        return False
 
-    for i in active:
-        sq = game_board.squares[i]
-        if (sq & 24) != color:
-            continue
+    def _move_order_key(b, mv):
+        from_sq, to_sq, promo = mv
+        moved = b.squares[from_sq]
+        captured = b.squares[to_sq]
+        score = 0
+        if captured != 0:
+            score += 1000
+        if (moved & 7) == Piece.PAWN and b.en_passant is not None and to_sq == b.en_passant and captured == 0:
+            score += 1000
+        if promo is not None:
+            score += 800
+        return score
 
-        for from_sq, to_sq, promo in apply_moves(game_board, i):
-            undo = make_move(game_board, from_sq, to_sq, promo, update_fen=False)
+    def minmax(b, depth, alpha, beta, ply):
+        if b.halfmove_clock >= 50:
+            return 0
+        if _insufficient_material(b):
+            return 0
 
-            if is_king_in_check(game_board, color):
-                undo_move(game_board, undo, update_fen=False)
-                continue
+        if depth <= 0:
+            return evaluate(b)
 
-            evaluation = -minmax(game_board, 3)
+        moves = all_legal_moves(b)
+        if not moves:
+            if is_king_in_check(b, b.side_to_move):
+                return -MATE_SCORE + ply
+            return 0
 
-            undo_move(game_board, undo, update_fen=False)
+        moves.sort(key=lambda m: _move_order_key(b, m), reverse=True)
 
-            if evaluation > best_eval:
-                best_eval = evaluation
-                best_move = (from_sq, to_sq, promo)
+        best = -INF
+        for from_sq, to_sq, promo in moves:
+            undo = make_move(b, from_sq, to_sq, promo, update_fen=False)
+            score = -minmax(b, depth - 1, -beta, -alpha, ply + 1)
+            undo_move(b, undo, update_fen=False)
 
-    if best_move is None:
-        return undo_stack, "AI has no legal moves!"
+            if score > best:
+                best = score
+
+            if score > alpha:
+                alpha = score
+            if alpha >= beta:
+                break
+
+        return best
+
+    if game_board.num_pieces <= 10:
+        depth = 5
+    elif game_board.num_pieces <= 18:
+        depth = 4
+    else:
+        depth = 3
+
+    root_moves = all_legal_moves(game_board)
+    if not root_moves:
+        return undo_stack, "AI has no legal moves"
+
+    root_moves.sort(key=lambda m: _move_order_key(game_board, m), reverse=True)
+
+    best_move = root_moves[0]
+    best_score = -INF
+    alpha = -INF
+    beta = INF
+
+    for mv in root_moves:
+        from_sq, to_sq, promo = mv
+        undo = make_move(game_board, from_sq, to_sq, promo, update_fen=False)
+        score = -minmax(game_board, depth - 1, -beta, -alpha, 1)
+        undo_move(game_board, undo, update_fen=False)
+
+        if score > best_score:
+            best_score = score
+            best_move = mv
+
+        if score > alpha:
+            alpha = score
 
     from_sq, to_sq, promo = best_move
-    undo = make_move(game_board, from_sq, to_sq, promo)
+    undo = make_move(game_board, from_sq, to_sq, promo, update_fen=True)
     if undo:
         undo_stack.append(undo)
 
     from_name = game_board.square_name(from_sq)
     to_name = game_board.square_name(to_sq)
-
     if promo is not None:
-        promo_name = Piece.get_piece(promo | color).upper()
-        the_move = f"AI played piece from {from_name} to {to_name} promoting to {promo_name}"
+        promo_name = 'q' if promo == Piece.QUEEN else ('r' if promo == Piece.ROOK else ('b' if promo == Piece.BISHOP else 'n'))
+        the_move = f"AI played {from_name} to {to_name}={promo_name} (eval {best_score})"
     else:
-        the_move = f"AI played piece from {from_name} to {to_name}"
+        the_move = f"AI played piece from {from_name} to {to_name} (eval {best_score})"
+
     return undo_stack, the_move
 
 def human_move(game_board, undo_stack, q, option=False):
@@ -176,7 +205,7 @@ def game(option):
     while not q:
         game_board.present_board()
         color = Piece.BLACK if game_board.side_to_move == Piece.WHITE else Piece.WHITE
-        print(get_evaluation(game_board))
+        print(evaluate(game_board))
 
         t, r = check_terminals(game_board, color)
         if t != None:
