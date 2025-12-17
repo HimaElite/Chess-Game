@@ -1,5 +1,5 @@
-from piece import Piece
-from board import *
+from Utilies.piece import Piece
+from Utilies.board import *
 
 
 # ------------------- HELPERS ------------------- #
