@@ -1,15 +1,3 @@
-"""
-Flask web GUI for the chess project.
-
-Goals of this rewrite:
-- Cleaner + safer API layer (validation + consistent responses)
-- Better in-memory game state handling (TTL cleanup to avoid memory growth)
-- More accurate terminal detection (checkmate vs stalemate/draw)
-- Provide board display order for a *white-at-bottom* view
-
-This file keeps the old routes so the existing HTML/JS continues to work.
-"""
-
 from __future__ import annotations
 
 import os
@@ -56,8 +44,6 @@ PIECE_SYMBOLS = {
     Piece.KING: "♚",
 }
 
-# Board display order for a WHITE-at-bottom board in HTML (top-left = a8)
-# UI order: a8..h8, a7..h7, ..., a1..h1
 DISPLAY_ORDER: List[int] = [(7 - r) * 8 + c for r in range(8) for c in range(8)]
 BOARD_TO_DISPLAY: List[int] = [0] * 64
 for ui_i, b_i in enumerate(DISPLAY_ORDER):
