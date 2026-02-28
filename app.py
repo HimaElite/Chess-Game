@@ -1,290 +1,451 @@
-from flask import Flask, render_template, request, jsonify, session, send_from_directory
+"""
+Flask web GUI for the chess project.
+
+Goals of this rewrite:
+- Cleaner + safer API layer (validation + consistent responses)
+- Better in-memory game state handling (TTL cleanup to avoid memory growth)
+- More accurate terminal detection (checkmate vs stalemate/draw)
+- Provide board display order for a *white-at-bottom* view
+
+This file keeps the old routes so the existing HTML/JS continues to work.
+"""
+
+from __future__ import annotations
+
+import os
+import re
+import secrets
+import threading
+import time
+from dataclasses import dataclass, field
+from typing import Dict, List, Optional
+
+from flask import Flask, jsonify, render_template, request, send_from_directory, session
+
 from Utilies.board import Board
 from Utilies.piece import Piece
-from Utilies.moves import take_move, all_legal_moves, legal_moves
-from Utilies.game import ai_move
-import random as rand
-import os
-import time
+from Utilies.moves import legal_moves, take_move
+from Utilies.moves import undo_move as undo_chess_move
+from Utilies.game import ai_move as engine_ai_move
+from Utilies.terminals_and_evaluations import check_terminals
 
-app = Flask(__name__, template_folder='GUI/templates', static_folder='GUI/static')
-app.secret_key = 'el-clasico-chess-secret'
 
-# Game state storage
-games = {}
+# ------------------------- Config ------------------------- #
 
-# Serve images from GUI/images folder
-@app.route('/static/images/<filename>')
-def serve_images(filename):
-    """Serve images from the images folder"""
-    images_folder = os.path.join(os.path.dirname(__file__), 'GUI', 'images')
+APP_SECRET_KEY = os.getenv("CHESS_SECRET_KEY", "el-clasico-chess-secret")
+
+app = Flask(__name__, template_folder="GUI/templates", static_folder="GUI/static")
+app.secret_key = APP_SECRET_KEY
+
+# Cache static files (css/js) for 1 day (safe for dev; browsers revalidate)
+app.config.setdefault("SEND_FILE_MAX_AGE_DEFAULT", 60 * 60 * 24)
+app.config.setdefault("SESSION_COOKIE_SAMESITE", "Lax")
+
+SQUARE_RE = re.compile(r"^[a-h][1-8]$")
+
+# Team theme (kept from existing UI)
+TEAM_WHITE = "madrid"       # white side
+TEAM_BLACK = "barcelona"    # black side
+
+PIECE_SYMBOLS = {
+    Piece.PAWN: "♟",
+    Piece.KNIGHT: "♞",
+    Piece.BISHOP: "♝",
+    Piece.ROOK: "♜",
+    Piece.QUEEN: "♛",
+    Piece.KING: "♚",
+}
+
+# Board display order for a WHITE-at-bottom board in HTML (top-left = a8)
+# UI order: a8..h8, a7..h7, ..., a1..h1
+DISPLAY_ORDER: List[int] = [(7 - r) * 8 + c for r in range(8) for c in range(8)]
+BOARD_TO_DISPLAY: List[int] = [0] * 64
+for ui_i, b_i in enumerate(DISPLAY_ORDER):
+    BOARD_TO_DISPLAY[b_i] = ui_i
+
+
+# ---------------------- Game storage ---------------------- #
+
+@dataclass
+class GameState:
+    board: Board = field(default_factory=Board)
+    mode: int = 1
+    player_team: str = TEAM_WHITE
+    undo_stack: List[dict] = field(default_factory=list)
+
+    # terminal state
+    game_over: bool = False
+    terminal: Optional[int] = None  # 1 white win, -1 black win, 0 draw, None ongoing
+    result_text: Optional[str] = None
+
+    created_at: float = field(default_factory=time.time)
+    last_access: float = field(default_factory=time.time)
+
+
+class GameStore:
+    """Simple in-memory store with TTL cleanup."""
+
+    def __init__(self, ttl_seconds: int = 2 * 60 * 60, max_games: int = 200):
+        self.ttl = ttl_seconds
+        self.max_games = max_games
+        self._lock = threading.RLock()
+        self._games: Dict[int, GameState] = {}
+
+    def _now(self) -> float:
+        return time.time()
+
+    def cleanup(self) -> None:
+        now = self._now()
+        with self._lock:
+            expired = [gid for gid, g in self._games.items() if (now - g.last_access) > self.ttl]
+            for gid in expired:
+                self._games.pop(gid, None)
+
+            if len(self._games) <= self.max_games:
+                return
+            items = sorted(self._games.items(), key=lambda kv: kv[1].last_access)
+            for gid, _ in items[: max(0, len(self._games) - self.max_games)]:
+                self._games.pop(gid, None)
+
+    def create(self, mode: int, player_team: str) -> int:
+        with self._lock:
+            for _ in range(50):
+                gid = secrets.randbelow(900000) + 100000
+                if gid not in self._games:
+                    gs = GameState(mode=mode, player_team=player_team)
+                    _sync_board_counters(gs.board)
+                    _update_terminal(gs)
+                    self._games[gid] = gs
+                    return gid
+        raise RuntimeError("Failed to allocate game id")
+
+    def get(self, gid: int) -> Optional[GameState]:
+        with self._lock:
+            gs = self._games.get(gid)
+            if gs:
+                gs.last_access = self._now()
+            return gs
+
+
+games = GameStore()
+
+
+@app.before_request
+def _cleanup_games_periodically() -> None:
+    games.cleanup()
+
+
+# ------------------------- Helpers ------------------------- #
+
+def _sync_board_counters(board: Board) -> None:
+    """Fixes missing initial counters used by evaluation/AI depth."""
+    try:
+        board.num_pieces = len(board.active_squares)
+    except Exception:
+        pass
+
+
+def _piece_dict(square_value: int) -> dict:
+    if square_value == 0:
+        return {"piece": None, "color": None}
+
+    piece_type = square_value & 7
+    is_white = bool(square_value & Piece.WHITE)
+    team = TEAM_WHITE if is_white else TEAM_BLACK
+    return {"piece": PIECE_SYMBOLS.get(piece_type, "?"), "color": team, "type": piece_type}
+
+
+def get_board_display(board: Board) -> List[dict]:
+    """Flat list in engine index order (0=a1 .. 63=h8)."""
+    return [_piece_dict(v) for v in board.squares]
+
+
+def get_board_display_ui(board: Board) -> List[dict]:
+    """Flat list in UI order (0=a8 .. 63=h1), i.e. white at bottom."""
+    return [_piece_dict(board.squares[i]) for i in DISPLAY_ORDER]
+
+
+def get_square_name(index: int) -> str:
+    files = "abcdefgh"
+    return files[index % 8] + str(index // 8 + 1)
+
+
+def get_square_index(square_name: str) -> int:
+    files = "abcdefgh"
+    return (int(square_name[1]) - 1) * 8 + files.index(square_name[0])
+
+
+def _validate_square(s: str) -> bool:
+    return isinstance(s, str) and bool(SQUARE_RE.match(s.strip().lower()))
+
+
+def _update_terminal(gs: GameState) -> None:
+    b = gs.board
+    last_mover = Piece.BLACK if b.side_to_move == Piece.WHITE else Piece.WHITE
+    t, reason = check_terminals(b, last_mover)
+    gs.terminal = t
+    gs.result_text = reason
+    gs.game_over = (t is not None)
+
+
+def _winner_team(gs: GameState) -> Optional[str]:
+    if gs.terminal is None:
+        return None
+    if gs.terminal == 1:
+        return TEAM_WHITE
+    if gs.terminal == -1:
+        return TEAM_BLACK
+    return "draw"
+
+
+def _ai_needs_to_move(gs: GameState) -> bool:
+    if gs.mode != 2 or gs.game_over:
+        return False
+    ai_color = Piece.BLACK if gs.player_team == TEAM_WHITE else Piece.WHITE
+    return gs.board.side_to_move == ai_color
+
+
+# ----------------------- Static routes ----------------------- #
+
+@app.route("/static/images/<path:filename>")
+def serve_images(filename: str):
+    images_folder = os.path.join(os.path.dirname(__file__), "GUI", "images")
     return send_from_directory(images_folder, filename)
 
-# Serve sounds from GUI/sounds folder
-@app.route('/sounds/<path:filename>')
-def serve_sounds(filename):
-    """Serve sound files from the sounds folder"""
-    sounds_folder = os.path.join(os.path.dirname(__file__), 'GUI', 'sounds')
+
+@app.route("/sounds/<path:filename>")
+def serve_sounds(filename: str):
+    sounds_folder = os.path.join(os.path.dirname(__file__), "GUI", "sounds")
     return send_from_directory(sounds_folder, filename)
 
-# Serve videos from GUI/videos folder
-@app.route('/videos/<path:filename>')
-def serve_videos(filename):
-    """Serve video files from the videos folder"""
-    videos_folder = os.path.join(os.path.dirname(__file__), 'GUI', 'videos')
+
+@app.route("/videos/<path:filename>")
+def serve_videos(filename: str):
+    videos_folder = os.path.join(os.path.dirname(__file__), "GUI", "videos")
     return send_from_directory(videos_folder, filename)
 
-def get_board_display(board):
-    """Convert board state to displayable format with piece symbols and colors"""
-    display = []
-    piece_symbols = {
-        Piece.PAWN: '♟',
-        Piece.KNIGHT: '♞',
-        Piece.BISHOP: '♝',
-        Piece.ROOK: '♜',
-        Piece.QUEEN: '♛',
-        Piece.KING: '♚'
-    }
-    
-    for i, square in enumerate(board.squares):
-        if square == 0:
-            display.append({'piece': None, 'color': None})
-        else:
-            piece_type = square & 7
-            color = 'madrid' if square & Piece.WHITE else 'barcelona'
-            symbol = piece_symbols.get(piece_type, '?')
-            display.append({'piece': symbol, 'color': color, 'type': piece_type})
-    
-    return display
 
-def get_square_name(index):
-    """Convert index (0-63) to chess notation (a1-h8)"""
-    file = index % 8
-    rank = index // 8
-    files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']
-    return files[file] + str(rank + 1)
+# ------------------------- Pages ------------------------- #
 
-def get_square_index(square_name):
-    """Convert chess notation (a1-h8) to index (0-63)"""
-    file = ord(square_name[0]) - ord('a')
-    rank = int(square_name[1]) - 1
-    return rank * 8 + file
-
-@app.route('/')
+@app.route("/")
 def index():
-    return render_template('mode_selector.html')
+    return render_template("mode_selector.html")
 
-@app.route('/team-selection')
+
+@app.route("/team-selection")
 def team_selection():
-    """Show team selection page for Human vs AI"""
-    return render_template('team_selector.html')
+    return render_template("team_selector.html")
 
-@app.route('/game/<int:mode>')
-def game(mode):
-    """Start a new game with selected mode"""
-    player_team = request.args.get('team', 'madrid')  # default to madrid (white)
-    game_id = rand.randint(100000, 999999)
-    games[game_id] = {
-        'board': Board(),
-        'mode': mode,
-        'player_team': player_team,
-        'undo_stack': [],
-        'game_over': False,
-        'winner': None,
-        'selected_square': None
-    }
-    session['game_id'] = game_id
-    return render_template('index.html', game_id=game_id, mode=mode, player_team=player_team)
 
-@app.route('/api/board/<int:game_id>')
-def get_board(game_id):
-    """Get current board state"""
-    if game_id not in games:
-        return jsonify({'error': 'Game not found'}), 404
-    
-    game_state = games[game_id]
-    board = game_state['board']
-    
+@app.route("/game/<int:mode>")
+def game(mode: int):
+    player_team = request.args.get("team", TEAM_WHITE)
+    if player_team not in (TEAM_WHITE, TEAM_BLACK):
+        player_team = TEAM_WHITE
+
+    game_id = games.create(mode=mode, player_team=player_team)
+    session["game_id"] = game_id
+
+    return render_template(
+        "index.html",
+        game_id=game_id,
+        mode=mode,
+        player_team=player_team,
+        display_order=DISPLAY_ORDER,
+    )
+
+
+# ------------------------- API ------------------------- #
+
+@app.get("/api/board/<int:game_id>")
+def api_board(game_id: int):
+    gs = games.get(game_id)
+    if not gs:
+        return jsonify({"error": "Game not found"}), 404
+
+    b = gs.board
     return jsonify({
-        'board': get_board_display(board),
-        'side_to_move': 'white' if board.side_to_move == Piece.WHITE else 'black',
-        'game_over': game_state['game_over'],
-        'winner': game_state['winner'],
-        'castling': board.castling,
-        'en_passant': board.en_passant
+        "board": get_board_display(b),
+        "board_ui": get_board_display_ui(b),
+        "display_order": DISPLAY_ORDER,
+        "board_to_display": BOARD_TO_DISPLAY,
+        "side_to_move": "white" if b.side_to_move == Piece.WHITE else "black",
+        "game_over": gs.game_over,
+        "winner": _winner_team(gs),
+        "result_text": gs.result_text,
+        "castling": b.castling,
+        "en_passant": b.en_passant,
     })
 
-@app.route('/api/legal_moves/<int:game_id>/<square>')
-def get_legal_moves_api(game_id, square):
-    """Get legal moves for a square"""
-    if game_id not in games:
-        return jsonify({'error': 'Game not found'}), 404
-    
-    try:
-        board = games[game_id]['board']
-        sq_index = get_square_index(square)
-        
-        # Check if square has a piece of current player's color
-        piece = board.squares[sq_index]
-        if piece == 0:
-            return jsonify({'legal_moves': []})
-        
-        if board.side_to_move == Piece.WHITE and not (piece & Piece.WHITE):
-            return jsonify({'legal_moves': []})
-        if board.side_to_move == Piece.BLACK and not (piece & Piece.BLACK):
-            return jsonify({'legal_moves': []})
-        
-        moves = legal_moves(board, sq_index)
-        move_names = [get_square_name(m) for m in moves]
-        
-        return jsonify({'legal_moves': move_names})
-    except Exception as e:
-        return jsonify({'error': str(e)}), 400
 
-@app.route('/api/move/<int:game_id>', methods=['POST'])
-def make_move(game_id):
-    """Make a move on the board"""
-    if game_id not in games:
-        return jsonify({'error': 'Game not found'}), 404
-    
-    data = request.json
-    from_sq = data.get('from')
-    to_sq = data.get('to')
-    promo = data.get('promo')
-    
+@app.get("/api/legal_moves/<int:game_id>/<square>")
+def api_legal_moves(game_id: int, square: str):
+    gs = games.get(game_id)
+    if not gs:
+        return jsonify({"error": "Game not found"}), 404
+
+    square = square.strip().lower()
+    if not _validate_square(square):
+        return jsonify({"legal_moves": []})
+
+    b = gs.board
     try:
-        game_state = games[game_id]
-        board = game_state['board']
-        
-        # Validate move
-        sq_index = get_square_index(from_sq)
-        moves = legal_moves(board, sq_index)
+        from_index = get_square_index(square)
+    except Exception:
+        return jsonify({"legal_moves": []})
+
+    piece = b.squares[from_index]
+    if piece == 0 or (piece & 24) != b.side_to_move:
+        return jsonify({"legal_moves": []})
+
+    moves = legal_moves(b, from_index)
+    return jsonify({"legal_moves": [get_square_name(m) for m in moves]})
+
+
+@app.post("/api/move/<int:game_id>")
+def api_move(game_id: int):
+    gs = games.get(game_id)
+    if not gs:
+        return jsonify({"error": "Game not found"}), 404
+    if gs.game_over:
+        return jsonify({"error": "Game is over"}), 400
+
+    data = request.get_json(silent=True) or {}
+    from_sq = (data.get("from") or "").strip().lower()
+    to_sq = (data.get("to") or "").strip().lower()
+    promo = data.get("promo")
+
+    if not (_validate_square(from_sq) and _validate_square(to_sq)):
+        return jsonify({"error": "Invalid squares"}), 400
+
+    b = gs.board
+    try:
+        from_index = get_square_index(from_sq)
         to_index = get_square_index(to_sq)
-        
-        if to_index not in moves:
-            return jsonify({'error': 'Illegal move'}), 400
-        
-        # Make the move
-        undo = take_move(board, from_sq, to_sq, promo)
-        if undo:
-            game_state['undo_stack'].append(undo)
-        
-        # Check game over
-        if not all_legal_moves(board):
-            game_state['game_over'] = True
-            game_state['winner'] = 'barcelona' if board.side_to_move == Piece.WHITE else 'madrid'
-        
-        # For Human vs AI, don't make AI move here - let frontend handle it with thinking animation
-        ai_needs_to_move = False
-        if game_state['mode'] == 2 and not game_state['game_over']:  # Human vs AI
-            player_team = game_state.get('player_team', 'madrid')
-            ai_color = Piece.BLACK if player_team == 'madrid' else Piece.WHITE
-            
-            if board.side_to_move == ai_color:
-                ai_needs_to_move = True
-        
-        return jsonify({
-            'success': True,
-            'board': get_board_display(board),
-            'side_to_move': 'white' if board.side_to_move == Piece.WHITE else 'black',
-            'game_over': game_state['game_over'],
-            'winner': game_state['winner'],
-            'ai_needs_to_move': ai_needs_to_move
-        })
-    
-    except Exception as e:
-        return jsonify({'error': str(e)}), 400
+    except Exception:
+        return jsonify({"error": "Invalid squares"}), 400
 
-@app.route('/api/undo/<int:game_id>', methods=['POST'])
-def undo_move(game_id):
-    """Undo the last move"""
-    if game_id not in games:
-        return jsonify({'error': 'Game not found'}), 404
-    
-    try:
-        from Utilies.moves import undo_move as undo_chess_move
-        
-        game_state = games[game_id]
-        if game_state['undo_stack']:
-            last = game_state['undo_stack'].pop()
-            undo_chess_move(game_state['board'], last)
-            game_state['game_over'] = False
-            game_state['winner'] = None
-        
-        board = game_state['board']
-        return jsonify({
-            'success': True,
-            'board': get_board_display(board),
-            'side_to_move': 'white' if board.side_to_move == Piece.WHITE else 'black'
-        })
-    except Exception as e:
-        return jsonify({'error': str(e)}), 400
+    if to_index not in legal_moves(b, from_index):
+        return jsonify({"error": "Illegal move"}), 400
 
-@app.route('/api/ai_move/<int:game_id>', methods=['POST'])
-def make_ai_move(game_id):
-    """Make an AI move (for AI vs AI mode)"""
-    if game_id not in games:
-        return jsonify({'error': 'Game not found'}), 404
-    
-    try:
-        game_state = games[game_id]
-        board = game_state['board']
-        
-        if game_state['game_over']:
-            return jsonify({'error': 'Game is over'}), 400
-        
-        # Count pieces before move
-        pieces_before = sum(1 for sq in board.squares if sq != 0)
-        print(f"[AI MOVE] Game {game_id}: Pieces before move: {pieces_before}")
-        
-        # Make AI move
-        ai_undo, ai_move_text = ai_move(board, game_state['undo_stack'])
-        game_state['undo_stack'] = ai_undo
-        
-        # Count pieces after move
-        pieces_after = sum(1 for sq in board.squares if sq != 0)
-        print(f"[AI MOVE] Game {game_id}: Pieces after move: {pieces_after}, Move text: {ai_move_text}")
-        
-        # Check game over after AI move
-        if not all_legal_moves(board):
-            game_state['game_over'] = True
-            game_state['winner'] = 'barcelona' if board.side_to_move == Piece.WHITE else 'madrid'
-        
-        board_display = get_board_display(board)
-        print(f"[AI MOVE] Game {game_id}: Board display squares with pieces: {sum(1 for sq in board_display if sq['piece'])}")
-        
-        return jsonify({
-            'success': True,
-            'board': board_display,
-            'side_to_move': 'white' if board.side_to_move == Piece.WHITE else 'black',
-            'game_over': game_state['game_over'],
-            'winner': game_state['winner'],
-            'ai_move': ai_move_text
-        })
-    
-    except Exception as e:
-        return jsonify({'error': str(e)}), 400
+    undo = take_move(b, from_sq, to_sq, promo)
+    if not undo:
+        return jsonify({"error": "Illegal move"}), 400
 
-@app.route('/api/restart/<int:game_id>', methods=['POST'])
-def restart_game(game_id):
-    """Restart the game"""
-    if game_id not in games:
-        return jsonify({'error': 'Game not found'}), 404
-    
-    game_state = games[game_id]
-    mode = game_state['mode']
-    player_team = game_state.get('player_team', 'madrid')
-    
-    game_state['board'] = Board()
-    game_state['undo_stack'] = []
-    game_state['game_over'] = False
-    game_state['winner'] = None
-    
+    gs.undo_stack.append(undo)
+    _sync_board_counters(b)
+    _update_terminal(gs)
+
     return jsonify({
-        'success': True,
-        'board': get_board_display(game_state['board']),
-        'side_to_move': 'white'
+        "success": True,
+        "board": get_board_display(b),
+        "board_ui": get_board_display_ui(b),
+        "side_to_move": "white" if b.side_to_move == Piece.WHITE else "black",
+        "game_over": gs.game_over,
+        "winner": _winner_team(gs),
+        "result_text": gs.result_text,
+        "ai_needs_to_move": _ai_needs_to_move(gs),
     })
 
-if __name__ == '__main__':
-    app.run(debug=True)
+
+@app.post("/api/undo/<int:game_id>")
+def api_undo(game_id: int):
+    gs = games.get(game_id)
+    if not gs:
+        return jsonify({"error": "Game not found"}), 404
+
+    if not gs.undo_stack:
+        b = gs.board
+        return jsonify({
+            "success": True,
+            "board": get_board_display(b),
+            "board_ui": get_board_display_ui(b),
+            "side_to_move": "white" if b.side_to_move == Piece.WHITE else "black",
+            "game_over": gs.game_over,
+            "winner": _winner_team(gs),
+        })
+
+    # Human vs AI: undo two plies when possible
+    plies = 2 if (gs.mode == 2 and len(gs.undo_stack) >= 2) else 1
+    for _ in range(plies):
+        if not gs.undo_stack:
+            break
+        last = gs.undo_stack.pop()
+        undo_chess_move(gs.board, last)
+
+    _sync_board_counters(gs.board)
+    _update_terminal(gs)
+
+    b = gs.board
+    return jsonify({
+        "success": True,
+        "board": get_board_display(b),
+        "board_ui": get_board_display_ui(b),
+        "side_to_move": "white" if b.side_to_move == Piece.WHITE else "black",
+        "game_over": gs.game_over,
+        "winner": _winner_team(gs),
+        "result_text": gs.result_text,
+    })
+
+
+@app.post("/api/ai_move/<int:game_id>")
+def api_ai_move(game_id: int):
+    gs = games.get(game_id)
+    if not gs:
+        return jsonify({"error": "Game not found"}), 404
+    if gs.game_over:
+        return jsonify({"error": "Game is over"}), 400
+
+    if gs.mode == 2 and not _ai_needs_to_move(gs):
+        return jsonify({"error": "Not AI turn"}), 400
+    if gs.mode == 1:
+        return jsonify({"error": "AI not enabled in this mode"}), 400
+
+    b = gs.board
+    new_stack, text = engine_ai_move(b, gs.undo_stack)
+    gs.undo_stack = new_stack
+
+    _sync_board_counters(b)
+    _update_terminal(gs)
+
+    return jsonify({
+        "success": True,
+        "board": get_board_display(b),
+        "board_ui": get_board_display_ui(b),
+        "side_to_move": "white" if b.side_to_move == Piece.WHITE else "black",
+        "game_over": gs.game_over,
+        "winner": _winner_team(gs),
+        "result_text": gs.result_text,
+        "ai_move": text,
+    })
+
+
+@app.post("/api/restart/<int:game_id>")
+def api_restart(game_id: int):
+    gs = games.get(game_id)
+    if not gs:
+        return jsonify({"error": "Game not found"}), 404
+
+    gs.board = Board()
+    gs.undo_stack = []
+    _sync_board_counters(gs.board)
+    _update_terminal(gs)
+
+    b = gs.board
+    return jsonify({
+        "success": True,
+        "board": get_board_display(b),
+        "board_ui": get_board_display_ui(b),
+        "side_to_move": "white",
+        "game_over": gs.game_over,
+        "winner": _winner_team(gs),
+        "result_text": gs.result_text,
+    })
+
+
+if __name__ == "__main__":
+    # Use: CHESS_HOST=0.0.0.0 CHESS_PORT=5000 CHESS_DEBUG=1 python app.py
+    host = os.getenv("CHESS_HOST", "127.0.0.1")
+    port = int(os.getenv("CHESS_PORT", "5000"))
+    debug = os.getenv("CHESS_DEBUG", "0") == "1"
+    app.run(host=host, port=port, debug=debug)

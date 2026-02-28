@@ -232,16 +232,16 @@
             const board = document.getElementById('chessboard');
             board.innerHTML = '';
             
-            // Flip board if player is Real Madrid (white) so they're at bottom
-            const shouldFlip = PLAYER_TEAM === 'madrid';
-            
             for (let i = 0; i < 64; i++) {
                 const square = document.createElement('div');
                 
-                // If flipped, reverse the index
-                const displayIndex = shouldFlip ? (63 - i) : i;
-                const row = Math.floor(displayIndex / 8);
-                const col = displayIndex % 8;
+                // Map UI index -> engine index
+                const uiRow = Math.floor(i / 8);
+                const uiCol = i % 8;
+                const displayIndex = (7 - uiRow) * 8 + uiCol;
+
+                const row = uiRow;
+                const col = uiCol;
                 const isLight = (row + col) % 2 === 0;
                 
                 square.className = `square ${isLight ? 'light' : 'dark'}`;
