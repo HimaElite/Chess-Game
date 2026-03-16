@@ -23,7 +23,7 @@
     /* General */
     --light-square: #e8d5c4;
     --dark-square: #8b7355;
-    --accent: #ffc107;
+    --accent: #fff386;
 }
 
 /* ===== GENERAL BODY STYLES ===== */
@@ -44,7 +44,7 @@ body {
     justify-content: center;
     align-items: center;
     padding: 10px;
-    background: url('/static/images/start_page_bg.png') center/cover no-repeat fixed;
+    background: url('/static/images/horaris-supercopa_FINAL.png') center/cover no-repeat fixed;
     background-color: #1a1a1a;
     overflow: hidden;
 }
@@ -353,10 +353,10 @@ body {
 
 /* ===== GAME PAGE STYLES ===== */
 .game-body {
-    background: url('/static/images/start_page_bg.png') center/cover no-repeat fixed;
+    background: url('/static/images/horaris-supercopa_FINAL.png') center/cover no-repeat fixed;
     min-height: 100vh;
     padding: 10px;
-    background-color: #1a1a1a;
+    background-color: #000131;
 }
 
 .game-container {
@@ -496,45 +496,45 @@ body {
 }
 
 .square.light {
-    background: linear-gradient(135deg, rgba(232, 213, 196, 0.8), rgba(232, 213, 196, 0.6));
+    background: linear-gradient(135deg, rgba(206, 235, 183, 0.9), rgba(206, 235, 183, 0.7));
 }
 
 .square.dark {
-    background: linear-gradient(135deg, rgba(139, 115, 85, 0.8), rgba(139, 115, 85, 0.6));
+    background: linear-gradient(135deg, rgba(130, 168, 93, 0.9), rgba(130, 168, 93, 0.7));
 }
 
 .square:hover {
     transform: scale(0.95);
-    box-shadow: inset 0 0 15px rgba(255, 193, 7, 0.3);
+    box-shadow: inset 0 0 15px rgba(255, 178, 35, 0.3);
 }
 
 .square.selected {
     border: 2px solid var(--madrid-gold);
-    box-shadow: inset 0 0 15px rgba(255, 193, 7, 0.5), 0 0 20px rgba(255, 193, 7, 0.4);
-    animation: glow 0.5s ease infinite;
+    box-shadow: inset 0 0 15px rgba(255, 178, 35, 0.5), 0 0 20px rgba(255, 178, 35, 0.4);
+    animation: glow 0.7s ease infinite;
 }
 
 .square.legal-move {
-    border: 2px solid rgba(76, 175, 80, 0.7);
-    box-shadow: inset 0 0 10px rgba(76, 175, 80, 0.4), 0 0 15px rgba(76, 175, 80, 0.3);
+    border: 2px solid rgba(245, 197, 37, 0.8);
+    box-shadow: inset 0 0 10px rgba(245, 197, 37, 0.6), 0 0 15px rgba(245, 197, 37, 0.5);
     animation: legalMoveGlow 0.7s ease infinite;
 }
 
 @keyframes glow {
     0%, 100% {
-        box-shadow: inset 0 0 15px rgba(255, 193, 7, 0.5), 0 0 20px rgba(255, 193, 7, 0.4);
+        box-shadow: inset 0 0 15px rgba(255, 178, 35, 0.5), 0 0 20px rgba(255, 178, 35, 0.4);
     }
     50% {
-        box-shadow: inset 0 0 20px rgba(255, 193, 7, 0.7), 0 0 30px rgba(255, 193, 7, 0.6);
+        box-shadow: inset 0 0 20px rgba(255, 178, 35, 0.7), 0 0 30px rgba(255, 178, 35, 0.6);
     }
 }
 
 @keyframes legalMoveGlow {
     0%, 100% {
-        box-shadow: inset 0 0 10px rgba(76, 175, 80, 0.4), 0 0 15px rgba(76, 175, 80, 0.3);
+        box-shadow: inset 0 0 10px rgba(245, 197, 37, 0.5), 0 0 15px rgba(245, 197, 37, 0.4);
     }
     50% {
-        box-shadow: inset 0 0 15px rgba(76, 175, 80, 0.6), 0 0 25px rgba(76, 175, 80, 0.5);
+        box-shadow: inset 0 0 15px rgba(245, 197, 37, 0.6), 0 0 25px rgba(245, 197, 37, 0.5);
     }
 }
 

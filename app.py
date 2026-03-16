@@ -140,7 +140,6 @@ def _piece_dict(square_value: int) -> dict:
     team = TEAM_WHITE if is_white else TEAM_BLACK
     return {"piece": PIECE_SYMBOLS.get(piece_type, "?"), "color": team, "type": piece_type}
 
-
 def get_board_display(board: Board) -> List[dict]:
     """Flat list in engine index order (0=a1 .. 63=h8)."""
     return [_piece_dict(v) for v in board.squares]
